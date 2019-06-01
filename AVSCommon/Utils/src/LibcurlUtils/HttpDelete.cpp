@@ -89,13 +89,13 @@ HTTPResponse HttpDelete::doDelete(const std::string& url, const std::vector<std:
     CURLcode curlResult = m_curl.perform();
     if (curlResult != CURLE_OK) {
         ACSDK_ERROR(
-            LX(errorEvent).d(errorReasonKey, "curlFailedWithCode: "  std::string(curl_easy_strerror(curlResult))));
+            LX(errorEvent).d(errorReasonKey, "curlFailedWithCode: " + std::string(curl_easy_strerror(curlResult))));
         return httpResponse;
     }
 
     size_t responseSize = responseData.getSize();
     if (responseSize > 0) {
-        std::vector<char> responseBody(responseSize  1, 0);
+        std::vector<char> responseBody(responseSize + 1, 0);
         responseData.getData(responseBody.data(), responseSize);
         httpResponse.body = std::string(responseBody.data());
     } else {
