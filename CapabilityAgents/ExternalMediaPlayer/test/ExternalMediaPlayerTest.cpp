@@ -1166,23 +1166,6 @@ TEST_F(ExternalMediaPlayerTest, testAuthorizeDiscoveredPlayers) {
 #endif
 
 /**
- * Test PLAY payload without index in ExternalMediaPlayer. This should succeed.
- */
-TEST_F(ExternalMediaPlayerTest, test_playNoIndex) {
-    auto avsMessageHeader = std::make_shared<AVSMessageHeader>(
-        PLAY_DIRECTIVE.nameSpace, PLAY_DIRECTIVE.name, MESSAGE_ID_TEST, DIALOG_REQUEST_ID_TEST);
-
-    std::shared_ptr<AVSDirective> directive = AVSDirective::create(
-        "", avsMessageHeader, createPlayPayloadNoIndex("XXX", 0, MSP_NAME1), m_attachmentManager, "");
-
-    EXPECT_CALL(*(MockExternalMediaPlayerAdapter::m_currentActiveMediaPlayerAdapter), handlePlay(_, _, _));
-    EXPECT_CALL(*m_mockDirectiveHandlerResult, setCompleted());
-
-    m_externalMediaPlayer->CapabilityAgent::preHandleDirective(directive, std::move(m_mockDirectiveHandlerResult));
-    m_externalMediaPlayer->CapabilityAgent::handleDirective(MESSAGE_ID_TEST);
-}
-
-/**
  * Test successful logout.
  */
 TEST_F(ExternalMediaPlayerTest, test_logout) {

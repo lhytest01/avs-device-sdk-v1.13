@@ -408,27 +408,6 @@ bool AlertsCapabilityAgent::initialize() {
 
     updateContextManager();
 
-    Document document( rapidjson::kObjectType );;
-    document.AddMember("time", parsedAlert->getScheduledTime_ISO_8601(), document.GetAllocator());
-    document.AddMember("type", parsedAlert->getTypeName(), document.GetAllocator());
-    std::string label;
-    if (!retrieveValue(payload, KEY_LABEL, &label)) {
-        document.AddMember("label", "", document.GetAllocator());
-    } else {
-        document.AddMember("label", label, document.GetAllocator());
-    }
-    // build the json state string
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer( buffer );
-
-    if (!document.Accept( writer )) {
-        ACSDK_ERROR(LX("failedToWriteJsonDocument").m("Alert DetailedInfo not sent"));
-    } else {
-        std::string payload = buffer.GetString();
-        std::string token = parsedAlert->getToken();
-        m_executor.submit([this, token, payload]() { executeOnAlertCreated( token, payload); });
-    }
-
     return true;
 }
 
@@ -488,8 +467,26 @@ bool AlertsCapabilityAgent::handleSetAlert(
 
     updateContextManager();
 
-    std::string token = *alertToken;
-    m_executor.submit([this, token]() { executeOnAlertDeleted(token); });
+    Document document( rapidjson::kObjectType );;
+    document.AddMember("time", parsedAlert->getScheduledTime_ISO_8601(), document.GetAllocator());
+    document.AddMember("type", parsedAlert->getTypeName(), document.GetAllocator());
+    std::string label;
+    if (!retrieveValue(payload, KEY_LABEL, &label)) {
+        document.AddMember("label", "", document.GetAllocator());
+    } else {
+        document.AddMember("label", label, document.GetAllocator());
+    }
+    // build the json state string
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer( buffer );
+
+    if (!document.Accept( writer )) {
+        ACSDK_ERROR(LX("failedToWriteJsonDocument").m("Alert DetailedInfo not sent"));
+    } else {
+        std::string payload = buffer.GetString();
+        std::string token = parsedAlert->getToken();
+        m_executor.submit([this, token, payload]() { executeOnAlertCreated( token, payload); });
+    }
 
     return true;
 }
@@ -509,6 +506,9 @@ bool AlertsCapabilityAgent::handleDeleteAlert(
     }
 
     updateContextManager();
+
+    std::string token = *alertToken;
+    m_executor.submit([this, token]() { executeOnAlertDeleted(token); });
 
     return true;
 }
