@@ -1106,9 +1106,9 @@ void logFailedSaveAndClearCapabilitiesPublishTable(const std::shared_ptr<MiscSto
     ACSDK_ERROR(
         LX("saveCapabilitiesPublishDataFailed")
             .d("reason",
-               "Unable to update the table " + CAPABILITIES_PUBLISH_TABLE + " for component " + COMPONENT_NAME  "."));
+               "Unable to update the table " + CAPABILITIES_PUBLISH_TABLE + " for component " + COMPONENT_NAME + "."));
     ACSDK_INFO(LX("saveCapabilitiesPublishDataInfo")
-                   .m("Clearing table " + CAPABILITIES_PUBLISH_TABLE + " for component " + COMPONENT_NAME  "."));
+                   .m("Clearing table " + CAPABILITIES_PUBLISH_TABLE + " for component " + COMPONENT_NAME + "."));
     if (!miscStorage->clearTable(COMPONENT_NAME, CAPABILITIES_PUBLISH_TABLE)) {
         ACSDK_ERROR(LX("saveCapabilitiesPublishDataFailed")
                         .d("reason",
@@ -1118,7 +1118,7 @@ void logFailedSaveAndClearCapabilitiesPublishTable(const std::shared_ptr<MiscSto
 }
 
 bool CapabilitiesDelegate::saveCapabilitiesPublishData() {
-    const std::string dbKeysPrefix = DB_KEY_ENDPOINT + m_capabilitiesApiEndpoint  DB_KEY_SEPARATOR;
+    const std::string dbKeysPrefix = DB_KEY_ENDPOINT + m_capabilitiesApiEndpoint + DB_KEY_SEPARATOR;
 
     if ((!m_previousDeviceInfo) || (m_previousDeviceInfo->getClientId() != m_deviceInfo->getClientId())) {
         if (!m_miscStorage->put(
