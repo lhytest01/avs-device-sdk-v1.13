@@ -1133,7 +1133,7 @@ TEST_F(ExternalMediaPlayerTest, test_playNoOffset) {
 
     std::shared_ptr<AVSDirective> directive = AVSDirective::create(
 #ifdef EXTERNALMEDIAPLAYER_1_1
-        "", avsMessageHeader, createPlayPayloadNoIndex("XXX", 0, MSP_NAME1, "YYY", "ZZZ", "DEFAULT", false), m_attachmentManager, "");
+        "", avsMessageHeader, createPlayPayloadNoOffset("XXX", 0, MSP_NAME1, "YYY", "ZZZ", "DEFAULT", false), m_attachmentManager, "");
 #else
         "", avsMessageHeader, createPlayPayloadNoOffset("XXX", 0, MSP_NAME1), m_attachmentManager, "");
 #endif
@@ -1148,6 +1148,33 @@ TEST_F(ExternalMediaPlayerTest, test_playNoOffset) {
     m_externalMediaPlayer->CapabilityAgent::preHandleDirective(directive, std::move(m_mockDirectiveHandlerResult));
     m_externalMediaPlayer->CapabilityAgent::handleDirective(MESSAGE_ID_TEST);
 }
+
+/**
+ * Test PLAY payload without index in ExternalMediaPlayer. This should succeed.
+ */
+TEST_F(ExternalMediaPlayerTest, test_playNoIndex) {
+    auto avsMessageHeader = std::make_shared<AVSMessageHeader>(
+        PLAY_DIRECTIVE.nameSpace, PLAY_DIRECTIVE.name, MESSAGE_ID_TEST, DIALOG_REQUEST_ID_TEST);
+
+    std::shared_ptr<AVSDirective> directive = AVSDirective::create(
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        "", avsMessageHeader, createPlayPayloadNoIndex("XXX", 0, MSP_NAME1, "YYY", "ZZZ", "DEFAULT", false), m_attachmentManager, "");
+#else
+        "", avsMessageHeader, createPlayPayloadNoIndex("XXX", 0, MSP_NAME1), m_attachmentManager, "");
+#endif
+
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    EXPECT_CALL(*(MockExternalMediaPlayerAdapter::m_currentActiveMediaPlayerAdapter), handlePlay(_, _, _, _, _, _, _));
+#else
+    EXPECT_CALL(*(MockExternalMediaPlayerAdapter::m_currentActiveMediaPlayerAdapter), handlePlay(_, _, _));
+#endif
+    EXPECT_CALL(*m_mockDirectiveHandlerResult, setCompleted());
+
+    m_externalMediaPlayer->CapabilityAgent::preHandleDirective(directive, std::move(m_mockDirectiveHandlerResult));
+    m_externalMediaPlayer->CapabilityAgent::handleDirective(MESSAGE_ID_TEST);
+}
+
+
 
 #ifdef EXTERNALMEDIAPLAYER_1_1
 /**
