@@ -31,6 +31,9 @@ public:
     MOCK_METHOD1(addDirectiveHandler, bool(std::shared_ptr<DirectiveHandlerInterface> handler));
     MOCK_METHOD1(removeDirectiveHandler, bool(std::shared_ptr<DirectiveHandlerInterface> handler));
     MOCK_METHOD1(setDialogRequestId, void(const std::string& dialogRequestId));
+    MOCK_METHOD0(getCurrentDialogRequestId, std::string());
+    MOCK_METHOD0(isCurrentDialogRequestOnline, bool());
+    MOCK_METHOD1(setIsCurrentDialogRequestOnline, void(bool));
     MOCK_METHOD1(onDirective, bool(std::shared_ptr<avsCommon::avs::AVSDirective> directive));
     MOCK_METHOD0(doShutdown, void());
     MOCK_METHOD0(disable, void());

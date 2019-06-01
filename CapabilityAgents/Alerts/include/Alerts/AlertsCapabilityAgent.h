@@ -275,6 +275,32 @@ private:
         const std::string& reason);
 
     /**
+     * A callback function to notify an object that an alert has been created with additional information about the alert.
+     *
+     * @param alertToken The AVS token of the alert.
+     * @param detailedInfo The JSON payload of detailed alert info :
+     * {
+     *      "time" : <String>
+     *      "type" : <String>
+     *      "label" : <String>
+     * }
+     * time The time string ( Scheduled Time ISO_8601 ).
+     * type The type of the alert ( ALERT, REMINDER, TIMER ).
+     * label The label of the TIMER, description for REMINDER, or empty string for ALARM.
+     */
+    void executeOnAlertCreated(
+        const std::string& alertToken,
+        const std::string& jsonPayload);
+
+    /**
+     * A handler function which will be called by our internal executor when an alert is deleted.
+     *
+     * alertToken The AVS token of the alert.
+     */
+    void executeOnAlertDeleted(
+        const std::string& alertToken);
+
+    /**
      * A handler function which will be called by our internal executor to add an alert observer.
      *
      * @param observer The observer to add.
@@ -301,6 +327,21 @@ private:
         const std::string& alertType,
         AlertObserverInterface::State state,
         const std::string& reason = "");
+
+    /**
+     * A handler function which will be called by our internal executor to notify the observer of detailed alert info.
+     *
+     * @param alertToken The alert token. See AlertObserverInterface for more.
+     * @param jsonInfo The detailed JSON info. See AlertObserverInterface for more.
+     */
+    void executeNotifyAlertCreatedObservers(const std::string& alertToken, const std::string& jsonInfo);
+
+    /**
+     * A handler function which will be called by our internal executor to notify the observer of an alert deleted.
+     *
+     * @param alertToken The alert token. See AlertObserverInterface for more.
+     */
+    void executeNotifyAlertDeletedObservers(const std::string& alertToken);
 
     /**
      * A handler function which will be called by our internal executor to remove all alerts currently being managed.

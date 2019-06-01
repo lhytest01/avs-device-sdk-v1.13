@@ -6,6 +6,10 @@ set(PROJECT_BRIEF "A cross-platform, modular SDK for interacting with the Alexa 
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CapabilityAgents/ExternalMediaPlayer/src/ExternalMediaPlayerAdapters")
     set(HAS_EXTERNAL_MEDIA_PLAYER_ADAPTERS ON)
 endif()
+option(EXTERNALMEDIAPLAYER_1_1 "Build ExternalMediaPlayer 1.1" ON)
+if(EXTERNALMEDIAPLAYER_1_1)
+    add_definitions(-DEXTERNALMEDIAPLAYER_1_1)
+endif()
 
 include(build/BuildDefaults.cmake)
 include(tools/Testing.cmake)

@@ -96,6 +96,9 @@ static const std::string PLAYER_STATE = "IDLE";
 static const NamespaceAndName PLAY_DIRECTIVE{EXTERNALMEDIAPLAYER_NAMESPACE, "Play"};
 static const NamespaceAndName LOGIN_DIRECTIVE{EXTERNALMEDIAPLAYER_NAMESPACE, "Login"};
 static const NamespaceAndName LOGOUT_DIRECTIVE{EXTERNALMEDIAPLAYER_NAMESPACE, "Logout"};
+#ifdef EXTERNALMEDIAPLAYER_1_1
+static const NamespaceAndName AUTHORIZEDISCOVEREDPLAYERS_DIRECTIVE{EXTERNALMEDIAPLAYER_NAMESPACE, "AuthorizeDiscoveredPlayers"};
+#endif
 
 // The @c Transport control directive signatures.
 static const NamespaceAndName RESUME_DIRECTIVE{PLAYBACKCONTROLLER_NAMESPACE, "Play"};
@@ -137,7 +140,15 @@ static const std::string IDLE_SESSION_STATE =
             "\"username\":\"\","
             "\"isGuest\":false,"
             "\"launched\":false,"
-           "\"active\":false}"
+            "\"active\":false"
+#ifdef EXTERNALMEDIAPLAYER_1_1
+            ","
+            "\"spiVersion\":\"\","
+            "\"playerCookie\":\"\","
+            "\"skillToken\":\"\","
+            "\"playbackSessionId\":\"\""
+#endif
+        "}"
     "]}";
 
 static const std::string IDLE_PLAYBACK_STATE =
@@ -261,7 +272,12 @@ public:
             bool forceLogin,
             std::chrono::milliseconds tokenRefreshInterval));
     MOCK_METHOD0(handleLogout, void());
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    MOCK_METHOD7(handlePlay, void(std::string& playContextToken, int64_t index, std::chrono::milliseconds offset,
+        std::string& skillToken, std::string& playbackSessionId, std::string& navigation, bool preload));
+#else
     MOCK_METHOD3(handlePlay, void(std::string& playContextToken, int64_t index, std::chrono::milliseconds offset));
+#endif
     MOCK_METHOD1(handlePlayControl, void(RequestType requestType));
     MOCK_METHOD1(handleSeek, void(std::chrono::milliseconds offset));
     MOCK_METHOD1(handleAdjustSeek, void(std::chrono::milliseconds deltaOffset));
@@ -321,6 +337,53 @@ std::shared_ptr<MockExternalMediaPlayerObserver> MockExternalMediaPlayerObserver
 MockExternalMediaPlayerObserver::MockExternalMediaPlayerObserver() {
 }
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+/**
+ * Method to create AuthorizeDiscoveredPlayers payload.
+ *
+ * @return A string representation of the payload.
+ */
+static std::string createAuthorizeDiscoveredPlayersPayload() {
+    // clang-format off
+    // {
+    //     "directive": {
+    //         "header": {
+    //             "namespace": "ExternalMediaPlayer",
+    //             "name": "AuthorizeDiscoveredPlayers"
+    //         },
+    //         "payload": {
+    //             "players" : [
+    //                 {
+    //                     "localPlayerId": "{{STRING}}",
+    //                     "authorized": {{BOOLEAN}},
+    //                     "metadata": {
+    //                         "playerId": "{{STRING}}",
+    //                         "skillToken": "{{STRING}}"
+    //                     }
+    //                 }
+    //             ]
+    //         }
+    //     }
+    // }
+    const std::string AUTHORIZEDISCOVEREDPLAYERS_PAYLOAD_TEST =
+        "{"
+            "\"players\" : ["
+                "{"
+                    "\"localPlayerId\": \"Spotify:ESDK\","
+                    "\"authorized\": true,"
+                    "\"metadata\": {"
+                        "\"playerId\": \"Spotify\","
+                        "\"skillToken\": \"YYY\""
+                    "}"
+                "}"
+            "]"
+        "}";
+    // clang-format on
+
+    return AUTHORIZEDISCOVEREDPLAYERS_PAYLOAD_TEST;
+}
+#endif
+
 /**
  * Method to create payload with parse error.
  *
@@ -334,14 +397,29 @@ static std::string createPlayPayloadWithParseError(
     const std::string& playContext,
     int index,
     int64_t offsetInMilliseconds,
-    const std::string& playerId) {
+    const std::string& playerId
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    ,
+    const std::string& skillToken,
+    const std::string& playbackSessionId,
+    const std::string& navigation, // DEFAULT, NONE, FOREGROUND
+    bool preload
+#endif
+    ) {
     // clang-format off
     const std::string PLAY_PAYLOAD_TEST =
         "{"
-            "\"playbackContextToken\":\"" + playContext + "\","
-            "\"offsetInMilliseconds\":" + std::to_string(offsetInMilliseconds) + "\","
-            "\"playerId\":\"" + playerId + "\","
-            "\"index\":\"" + std::to_string(index) + "\","
+            "\"playbackContextToken\":\""  playContext  "\","
+            "\"offsetInMilliseconds\":"  std::to_string(offsetInMilliseconds)  "\","
+            "\"playerId\":\""  playerId  "\","
+            "\"index\":\""  std::to_string(index)  "\","
+#ifdef EXTERNALMEDIAPLAYER_1_1
+//             ","
+            "\"skillToken\":\""  skillToken  "\","
+            "\"playbackSessionId\":\""  playbackSessionId  "\","
+            "\"navigation\":\""  navigation  "\"," // DEFAULT, NONE, FOREGROUND
+            "\"preload\":"  (preload ? "true" : "false")  ""
+#endif
         "}";
     // clang-format on
 
@@ -358,7 +436,7 @@ static std::string createPayloadWithPlayerId(const std::string& playerId) {
     // clang-format off
     const std::string PLAYERID_PAYLOAD_TEST =
         "{"
-            "\"playerId\":\"" + playerId + "\""
+            "\"playerId\":\""  playerId  "\""
         "}";
     // clang-format on
 
@@ -378,14 +456,29 @@ static std::string createPlayPayload(
     const std::string& playContext,
     int index,
     int64_t offsetInMilliseconds,
-    const std::string& playerId) {
+    const std::string& playerId
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    ,
+    const std::string& skillToken,
+    const std::string& playbackSessionId,
+    const std::string& navigation, // DEFAULT, NONE, FOREGROUND
+    bool preload
+#endif
+    ) {
     // clang-format off
     const std::string PLAY_PAYLOAD_TEST =
         "{"
-            "\"playbackContextToken\":\"" + playContext + "\","
-            "\"offsetInMilliseconds\":\"" + std::to_string(offsetInMilliseconds) + "\","
-            "\"playerId\":\"" + playerId + "\","
-            "\"index\":\"" + std::to_string(index) + "\""
+            "\"playbackContextToken\":\""  playContext  "\","
+            "\"offsetInMilliseconds\":\""  std::to_string(offsetInMilliseconds)  "\","
+            "\"playerId\":\""  playerId  "\","
+            "\"index\":\""  std::to_string(index)  "\""
+#ifdef EXTERNALMEDIAPLAYER_1_1
+            ","
+            "\"skillToken\":\""  skillToken  "\","
+            "\"playbackSessionId\":\""  playbackSessionId  "\","
+            "\"navigation\":\""  navigation  "\"," // DEFAULT, NONE, FOREGROUND
+            "\"preload\":"  (preload ? "true" : "false")  ""
+#endif
         "}";
     // clang-format on
 
@@ -400,13 +493,28 @@ static std::string createPlayPayload(
  * @param playerId The business name of the player.
  * @return A string representation of the payload.
  */
-static std::string createPlayPayloadNoContext(int index, int64_t offsetInMilliseconds, const std::string& playerId) {
+static std::string createPlayPayloadNoContext(int index, int64_t offsetInMilliseconds, const std::string& playerId
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    ,
+    const std::string& skillToken,
+    const std::string& playbackSessionId,
+    const std::string& navigation, // DEFAULT, NONE, FOREGROUND
+    bool preload
+#endif
+) {
     // clang-format off
     const std::string PLAY_PAYLOAD_TEST =
         "{"
-            "\"offsetInMilliseconds\":\"" + std::to_string(offsetInMilliseconds) + "\","
-            "\"playerId\":\"" + playerId + "\","
-            "\"index\":\"" + std::to_string(index) + "\""
+            "\"offsetInMilliseconds\":\""  std::to_string(offsetInMilliseconds)  "\","
+            "\"playerId\":\""  playerId  "\","
+            "\"index\":\""  std::to_string(index)  "\""
+#ifdef EXTERNALMEDIAPLAYER_1_1
+            ","
+            "\"skillToken\":\""  skillToken  "\","
+            "\"playbackSessionId\":\""  playbackSessionId  "\","
+            "\"navigation\":\""  navigation  "\"," // DEFAULT, NONE, FOREGROUND
+            "\"preload\":"  (preload ? "true" : "false")  ""
+#endif
         "}";
     // clang-format on
 
@@ -424,13 +532,28 @@ static std::string createPlayPayloadNoContext(int index, int64_t offsetInMillise
 static std::string createPlayPayloadNoPlayerId(
     const std::string& playContext,
     int index,
-    int64_t offsetInMilliseconds) {
+    int64_t offsetInMilliseconds
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    ,
+    const std::string& skillToken,
+    const std::string& playbackSessionId,
+    const std::string& navigation, // DEFAULT, NONE, FOREGROUND
+    bool preload
+#endif
+    ) {
     // clang-format off
     const std::string PLAY_PAYLOAD_TEST =
         "{"
-            "\"playbackContextToken\":\"" + playContext + "\","
-            "\"offsetInMilliseconds\":\"" + std::to_string(offsetInMilliseconds) + "\","
-            "\"index\":\"" + std::to_string(index) + "\""
+            "\"playbackContextToken\":\""  playContext  "\","
+            "\"offsetInMilliseconds\":\""  std::to_string(offsetInMilliseconds)  "\","
+            "\"index\":\""  std::to_string(index)  "\""
+#ifdef EXTERNALMEDIAPLAYER_1_1
+            ","
+            "\"skillToken\":\""  skillToken  "\","
+            "\"playbackSessionId\":\""  playbackSessionId  "\","
+            "\"navigation\":\""  navigation  "\"," // DEFAULT, NONE, FOREGROUND
+            "\"preload\":"  (preload ? "true" : "false")  ""
+#endif
         "}";
 
     // clang-format on
@@ -449,13 +572,28 @@ static std::string createPlayPayloadNoPlayerId(
 static std::string createPlayPayloadNoIndex(
     const std::string& playContext,
     int64_t offsetInMilliseconds,
-    const std::string& playerId) {
+    const std::string& playerId
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    ,
+    const std::string& skillToken,
+    const std::string& playbackSessionId,
+    const std::string& navigation, // DEFAULT, NONE, FOREGROUND
+    bool preload
+#endif
+    ) {
     // clang-format off
     const std::string PLAY_PAYLOAD_TEST =
         "{"
-            "\"playbackContextToken\":\"" + playContext + "\","
-            "\"offsetInMilliseconds\":" + std::to_string(offsetInMilliseconds) + ","
-            "\"playerId\":\"" + playerId + "\""
+            "\"playbackContextToken\":\""  playContext  "\","
+            "\"offsetInMilliseconds\":"  std::to_string(offsetInMilliseconds)  ","
+            "\"playerId\":\""  playerId  "\""
+#ifdef EXTERNALMEDIAPLAYER_1_1
+            ","
+            "\"skillToken\":\""  skillToken  "\","
+            "\"playbackSessionId\":\""  playbackSessionId  "\","
+            "\"navigation\":\""  navigation  "\"," // DEFAULT, NONE, FOREGROUND
+            "\"preload\":"  (preload ? "true" : "false")  ""
+#endif
         "}";
 
     // clang-format on
@@ -471,13 +609,28 @@ static std::string createPlayPayloadNoIndex(
  * @param playerId The business name of the player.
  * @return A string representation of the payload.
  */
-static std::string createPlayPayloadNoOffset(const std::string& playContext, int index, const std::string& playerId) {
+static std::string createPlayPayloadNoOffset(const std::string& playContext, int index, const std::string& playerId
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    ,
+    const std::string& skillToken,
+    const std::string& playbackSessionId,
+    const std::string& navigation, // DEFAULT, NONE, FOREGROUND
+    bool preload
+#endif
+) {
     // clang-format off
     const std::string PLAY_PAYLOAD_TEST =
         "{"
-            "\"playbackContextToken\":\"" + playContext + "\","
-            "\"playerId\":\"" + playerId + "\","
-            "\"index\":\"" + std::to_string(index) + "\""
+            "\"playbackContextToken\":\""  playContext  "\","
+            "\"playerId\":\""  playerId  "\","
+            "\"index\":\""  std::to_string(index)  "\""
+#ifdef EXTERNALMEDIAPLAYER_1_1
+            ","
+            "\"skillToken\":\""  skillToken  "\","
+            "\"playbackSessionId\":\""  playbackSessionId  "\","
+            "\"navigation\":\""  navigation  "\"," // DEFAULT, NONE, FOREGROUND
+            "\"preload\":"  (preload ? "true" : "false")  ""
+#endif
         "}";
 
     // clang-format on
@@ -504,11 +657,11 @@ static std::string createLoginPayload(
     // clang-format off
     const std::string LOGIN_PAYLOAD_TEST =
         "{"
-            "\"playerId\":\"" + playerId + "\","
-            "\"accessToken\":\"" + accessToken + "\","
-            "\"tokenRefreshIntervalInMilliseconds\":" + std::to_string(refreshInterval) + ","
-            "\"forceLogin\": true" + ","
-            "\"username\":\"" + userName + "\""
+            "\"playerId\":\""  playerId  "\","
+            "\"accessToken\":\""  accessToken  "\","
+            "\"tokenRefreshIntervalInMilliseconds\":"  std::to_string(refreshInterval)  ","
+            "\"forceLogin\": true"  ","
+            "\"username\":\""  userName  "\""
         "}";
 
     // clang-format on
@@ -529,12 +682,12 @@ static std::string createSeekPayload(int64_t timeOffset, const std::string& play
     std::string SEEK_PAYLOAD_TEST;
     // clang-format off
     if (adjustSeek) {
-        SEEK_PAYLOAD_TEST = "{\"playerId\":\"" + playerId + "\",\"deltaPositionMilliseconds\":" +
-                             std::to_string(timeOffset) + "}";
+        SEEK_PAYLOAD_TEST = "{\"playerId\":\""  playerId  "\",\"deltaPositionMilliseconds\":" 
+                             std::to_string(timeOffset)  "}";
     }
     else {
-        SEEK_PAYLOAD_TEST = "{\"playerId\":\"" + playerId + "\",\"positionMilliseconds\":" +
-                             std::to_string(timeOffset) + "}";
+        SEEK_PAYLOAD_TEST = "{\"playerId\":\""  playerId  "\",\"positionMilliseconds\":" 
+                             std::to_string(timeOffset)  "}";
     }
     // clang-format on
 
@@ -814,6 +967,9 @@ TEST_F(ExternalMediaPlayerTest, test_getConfiguration) {
 
     // TODO: ARC-227 Verify default values
     ASSERT_EQ(configuration[PLAY_DIRECTIVE], audioNonBlockingPolicy);
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    ASSERT_EQ(configuration[AUTHORIZEDISCOVEREDPLAYERS_DIRECTIVE], audioNonBlockingPolicy);
+#endif
     ASSERT_EQ(configuration[LOGIN_DIRECTIVE], neitherNonBlockingPolicy);
     ASSERT_EQ(configuration[LOGOUT_DIRECTIVE], neitherNonBlockingPolicy);
     ASSERT_EQ(configuration[RESUME_DIRECTIVE], audioNonBlockingPolicy);
@@ -888,7 +1044,11 @@ TEST_F(ExternalMediaPlayerTest, test_playParserError) {
         PLAY_DIRECTIVE.nameSpace, PLAY_DIRECTIVE.name, MESSAGE_ID_TEST, DIALOG_REQUEST_ID_TEST);
 
     std::shared_ptr<AVSDirective> directive = AVSDirective::create(
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        "", avsMessageHeader, createPlayPayloadWithParseError("XXX", 0, 0, "Spotify", "YYY", "ZZZ", "DEFAULT", false), m_attachmentManager, "");
+#else
         "", avsMessageHeader, createPlayPayloadWithParseError("XXX", 0, 0, "Spotify"), m_attachmentManager, "");
+#endif
 
     EXPECT_CALL(*(m_mockExceptionSender.get()), sendExceptionEncountered(_, _, _));
     EXPECT_CALL(*m_mockDirectiveHandlerResult, setFailed(_));
@@ -905,7 +1065,11 @@ TEST_F(ExternalMediaPlayerTest, test_playNoAdapter) {
         PLAY_DIRECTIVE.nameSpace, PLAY_DIRECTIVE.name, MESSAGE_ID_TEST, DIALOG_REQUEST_ID_TEST);
 
     std::shared_ptr<AVSDirective> directive =
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        AVSDirective::create("", avsMessageHeader, createPlayPayload("XXX", 0, 0, "Spotify", "YYY", "ZZZ", "DEFAULT", false), m_attachmentManager, "");
+#else
         AVSDirective::create("", avsMessageHeader, createPlayPayload("XXX", 0, 0, "Spotify"), m_attachmentManager, "");
+#endif
 
     EXPECT_CALL(*(m_mockExceptionSender.get()), sendExceptionEncountered(_, _, _));
     EXPECT_CALL(*m_mockDirectiveHandlerResult, setFailed(_));
@@ -922,7 +1086,11 @@ TEST_F(ExternalMediaPlayerTest, test_playNoPlayContext) {
         PLAY_DIRECTIVE.nameSpace, PLAY_DIRECTIVE.name, MESSAGE_ID_TEST, DIALOG_REQUEST_ID_TEST);
 
     std::shared_ptr<AVSDirective> directive = AVSDirective::create(
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        "", avsMessageHeader, createPlayPayloadNoContext(0, 0, MSP_NAME1, "YYY", "ZZZ", "DEFAULT", false), m_attachmentManager, "");
+#else
         "", avsMessageHeader, createPlayPayloadNoContext(0, 0, MSP_NAME1), m_attachmentManager, "");
+#endif
 
     EXPECT_CALL(*(m_mockExceptionSender.get()), sendExceptionEncountered(_, _, _));
     EXPECT_CALL(*m_mockDirectiveHandlerResult, setFailed(_));
@@ -939,9 +1107,17 @@ TEST_F(ExternalMediaPlayerTest, test_playNoPlayerId) {
         PLAY_DIRECTIVE.nameSpace, PLAY_DIRECTIVE.name, MESSAGE_ID_TEST, DIALOG_REQUEST_ID_TEST);
 
     std::shared_ptr<AVSDirective> directive =
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        AVSDirective::create("", avsMessageHeader, createPlayPayloadNoPlayerId("XXX", 0, 0, "YYY", "ZZZ", "DEFAULT", false), m_attachmentManager, "");
+#else
         AVSDirective::create("", avsMessageHeader, createPlayPayloadNoPlayerId("XXX", 0, 0), m_attachmentManager, "");
+#endif
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    EXPECT_CALL(*(MockExternalMediaPlayerAdapter::m_currentActiveMediaPlayerAdapter), handlePlay(_, _, _, _, _, _, _));
+#else
     EXPECT_CALL(*(m_mockExceptionSender.get()), sendExceptionEncountered(_, _, _));
+#endif
     EXPECT_CALL(*m_mockDirectiveHandlerResult, setFailed(_));
 
     m_externalMediaPlayer->CapabilityAgent::preHandleDirective(directive, std::move(m_mockDirectiveHandlerResult));
@@ -956,14 +1132,38 @@ TEST_F(ExternalMediaPlayerTest, test_playNoOffset) {
         PLAY_DIRECTIVE.nameSpace, PLAY_DIRECTIVE.name, MESSAGE_ID_TEST, DIALOG_REQUEST_ID_TEST);
 
     std::shared_ptr<AVSDirective> directive = AVSDirective::create(
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        "", avsMessageHeader, createPlayPayloadNoIndex("XXX", 0, MSP_NAME1, "YYY", "ZZZ", "DEFAULT", false), m_attachmentManager, "");
+#else
         "", avsMessageHeader, createPlayPayloadNoOffset("XXX", 0, MSP_NAME1), m_attachmentManager, "");
+#endif
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    EXPECT_CALL(*(MockExternalMediaPlayerAdapter::m_currentActiveMediaPlayerAdapter), handlePlay(_, _, _, _, _, _, _));
+#else
     EXPECT_CALL(*(MockExternalMediaPlayerAdapter::m_currentActiveMediaPlayerAdapter), handlePlay(_, _, _));
+#endif
     EXPECT_CALL(*m_mockDirectiveHandlerResult, setCompleted());
 
     m_externalMediaPlayer->CapabilityAgent::preHandleDirective(directive, std::move(m_mockDirectiveHandlerResult));
     m_externalMediaPlayer->CapabilityAgent::handleDirective(MESSAGE_ID_TEST);
 }
+
+#ifdef EXTERNALMEDIAPLAYER_1_1
+/**
+ * Test successful AuthorizeDiscoveredPlayers.
+ */
+TEST_F(ExternalMediaPlayerTest, testAuthorizeDiscoveredPlayers) {
+    auto avsMessageHeader = std::make_shared<AVSMessageHeader>(
+        AUTHORIZEDISCOVEREDPLAYERS_DIRECTIVE.nameSpace, AUTHORIZEDISCOVEREDPLAYERS_DIRECTIVE.name, MESSAGE_ID_TEST, DIALOG_REQUEST_ID_TEST);
+
+    std::shared_ptr<AVSDirective> directive =
+        AVSDirective::create("", avsMessageHeader, createAuthorizeDiscoveredPlayersPayload(), m_attachmentManager, "");
+
+    m_externalMediaPlayer->CapabilityAgent::preHandleDirective(directive, std::move(m_mockDirectiveHandlerResult));
+    m_externalMediaPlayer->CapabilityAgent::handleDirective(MESSAGE_ID_TEST);
+}
+#endif
 
 /**
  * Test PLAY payload without index in ExternalMediaPlayer. This should succeed.

@@ -166,6 +166,15 @@ std::future<bool> Settings::changeSetting(const std::string& key, const std::str
     return m_executor.submit([this, key, value] { return executeChangeSetting(key, value); });
 }
 
+bool Settings::getSetting(const std::string& key, std::string& value) {
+    auto search = m_mapOfSettingsAttributes.find(key);
+    if (search != m_mapOfSettingsAttributes.end()) {
+        value = search->second.valueOfSetting;
+        return true;
+    }
+    return false;
+}
+
 bool Settings::executeChangeSetting(const std::string& key, const std::string& value) {
     if (!m_settingsStorage->modify(key, value)) {
         ACSDK_ERROR(LX("executeSettingChangedFailed").d("reason", "databaseUpdateFailed"));

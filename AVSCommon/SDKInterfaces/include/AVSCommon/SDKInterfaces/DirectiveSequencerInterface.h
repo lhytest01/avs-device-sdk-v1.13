@@ -92,6 +92,12 @@ public:
      */
     virtual void setDialogRequestId(const std::string& dialogRequestId) = 0;
 
+    virtual std::string getCurrentDialogRequestId() = 0;
+
+    virtual void setIsCurrentDialogRequestOnline(bool isOnline) = 0;
+
+    virtual bool isCurrentDialogRequestOnline() = 0;
+
     /**
      * Sequence the handling of an @c AVSDirective.  The actual handling is done by whichever @c DirectiveHandler
      * is associated with the @c AVSDirective's (namespace, name) pair.

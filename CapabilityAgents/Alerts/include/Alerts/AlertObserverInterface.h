@@ -69,6 +69,29 @@ public:
         const std::string& alertType,
         State state,
         const std::string& reason = "") = 0;
+        
+    /**
+     * A callback function to notify an object that an alert has been created with additional information about the alert.
+     *
+     * @param alertToken The AVS token of the alert.
+     * @param detailedInfo The JSON payload of detailed alert info :
+     * {
+     *      "time" : <String>
+     *      "type" : <String>
+     *      "label" : <String>
+     * }
+     * time The time string ( Scheduled Time ISO_8601 ).
+     * type The type of the alert ( ALERT, REMINDER, TIMER ).
+     * label The label of the TIMER, description for REMINDER, or empty string for ALARM.
+     */
+    virtual void onAlertCreated(const std::string& alertToken, const std::string& detailedInfo) {};
+
+    /**
+     * A callback function to notify an object that an alert has been deleted.
+     *
+     * alertToken The AVS token of the alert.
+     */
+    virtual void onAlertDeleted(const std::string& alertToken) {};
 
     /**
      * Convert a @c State to a @c std::string.

@@ -33,7 +33,7 @@ namespace externalMediaPlayer {
 /// Enumeration class for events sent by adapters to AVS.
 enum class AdapterEvent {
     /// ChangeReport event sent after adapter's initialization succeeds/fails.
-    CHANGE_REPORT,
+    CHANGE_REPORT, // Note: not in ExternalMediaPlayer 1.1
 
     /// Event to request token from third party.
     REQUEST_TOKEN,
@@ -48,7 +48,19 @@ enum class AdapterEvent {
     PLAYER_EVENT,
 
     /// PlayerErrorEvent to report all errors from the adapters.
-    PLAYER_ERROR_EVENT
+    PLAYER_ERROR_EVENT, // Note: rename PLAYER_ERROR in ExternalMediaPlayer 1.1
+
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    /// PlayerError event to report all errors from the adapters.
+    PLAYER_ERROR,
+
+    /// ReportDiscoveredPlayers event notifies the cloud of discovered players to be authorized.
+    REPORT_DISCOVERED_PLAYERS,
+
+    /// AuthorizationComplete event notifies the cloud of players which were authorized (and de-authorized).
+    AUTHORIZATION_COMPLETE
+
+#endif
 };
 
 /// Table with the retry times on subsequent retries for session management (token fetch/changeReport send).
@@ -58,12 +70,17 @@ extern const std::vector<int> SESSION_RETRY_TABLE;
 extern avsCommon::utils::RetryTimer SESSION_RETRY_TIMER;
 
 // The NamespaceAndName for events sent from the adapter to AVS.
-extern const avsCommon::avs::NamespaceAndName CHANGE_REPORT;
+extern const avsCommon::avs::NamespaceAndName CHANGE_REPORT; // Note: not in ExternalMediaPlayer 1.1
 extern const avsCommon::avs::NamespaceAndName REQUEST_TOKEN;
 extern const avsCommon::avs::NamespaceAndName LOGIN;
 extern const avsCommon::avs::NamespaceAndName LOGOUT;
 extern const avsCommon::avs::NamespaceAndName PLAYER_EVENT;
-extern const avsCommon::avs::NamespaceAndName PLAYER_ERROR_EVENT;
+extern const avsCommon::avs::NamespaceAndName PLAYER_ERROR_EVENT; // Note: rename PLAYER_ERROR in ExternalMediaPlayer 1.1
+#ifdef EXTERNALMEDIAPLAYER_1_1
+extern const avsCommon::avs::NamespaceAndName PLAYER_ERROR; // Note: rename PLAYER_ERROR in ExternalMediaPlayer 1.1
+extern const avsCommon::avs::NamespaceAndName REPORT_DISCOVERED_PLAYERS;
+extern const avsCommon::avs::NamespaceAndName AUTHORIZATION_COMPLETE;
+#endif
 
 /**
  * Method to iterate over a vector of supported operation in playback state and convert to JSON.

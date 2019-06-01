@@ -75,8 +75,13 @@ static const std::string EXTERNALMEDIAPLAYER_CAPABILITY_INTERFACE_TYPE = ALEXA_I
 /// ExternalMediaPlayer interface name
 static const std::string EXTERNALMEDIAPLAYER_CAPABILITY_INTERFACE_NAME = "ExternalMediaPlayer";
 /// ExternalMediaPlayer interface version
+#ifdef EXTERNALMEDIAPLAYER_1_1
+static const std::string EXTERNALMEDIAPLAYER_CAPABILITY_INTERFACE_VERSION = "1.1";
+#else
 static const std::string EXTERNALMEDIAPLAYER_CAPABILITY_INTERFACE_VERSION = "1.0";
+#endif
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
 /// Alexa.PlaybackStateReporter name.
 static const std::string PLAYBACKSTATEREPORTER_CAPABILITY_INTERFACE_NAME = PLAYBACKSTATEREPORTER_STATE_NAMESPACE;
 /// Alexa.PlaybackStateReporter version.
@@ -101,11 +106,30 @@ static const std::string SEEKCONTROLLER_CAPABILITY_INTERFACE_VERSION = "1.0";
 static const std::string FAVORITESCONTROLLER_CAPABILITY_INTERFACE_NAME = FAVORITESCONTROLLER_NAMESPACE;
 /// Alexa.FavoritesController version.
 static const std::string FAVORITESCONTROLLER_CAPABILITY_INTERFACE_VERSION = "1.0";
+#endif
+
+#ifdef EXTERNALMEDIAPLAYER_1_1
+/// The name of the @c FocusManager channel used by @c ExternalMediaPlayer and
+/// its Adapters.
+static const std::string CHANNEL_NAME = avsCommon::sdkInterfaces::FocusManagerInterface::CONTENT_CHANNEL_NAME;
+
+/**
+ * The activityId string used with @c FocusManager by @c ExternalMediaPlayer.
+ * (as per spec for AVS for monitoring channel activity.)
+ */
+static const std::string FOCUS_MANAGER_ACTIVITY_ID = "ExternalMediaPlayer";
+
+/// The duration to wait for a state change in @c onFocusChanged before failing.
+static const std::chrono::seconds TIMEOUT{2};
+#endif
 
 // The @c External media player play directive signature.
 static const NamespaceAndName PLAY_DIRECTIVE{EXTERNALMEDIAPLAYER_NAMESPACE, "Play"};
 static const NamespaceAndName LOGIN_DIRECTIVE{EXTERNALMEDIAPLAYER_NAMESPACE, "Login"};
 static const NamespaceAndName LOGOUT_DIRECTIVE{EXTERNALMEDIAPLAYER_NAMESPACE, "Logout"};
+#ifdef EXTERNALMEDIAPLAYER_1_1
+static const NamespaceAndName AUTHORIZEDISCOVEREDPLAYERS_DIRECTIVE{EXTERNALMEDIAPLAYER_NAMESPACE, "AuthorizeDiscoveredPlayers"};
+#endif
 
 // The @c Transport control directive signatures.
 static const NamespaceAndName RESUME_DIRECTIVE{PLAYBACKCONTROLLER_NAMESPACE, "Play"};
@@ -145,7 +169,7 @@ static const char PLAYER_IN_FOCUS[] = "playerInFocus";
 /// The max relative time in the past that we can  seek to in milliseconds(-12hours in ms).
 static const int64_t MAX_PAST_OFFSET = -86400000;
 
-/// The max relative time in the past that we can  seek to in milliseconds(+12 hours in ms).
+/// The max relative time in the past that we can  seek to in milliseconds(12 hours in ms).
 static const int64_t MAX_FUTURE_OFFSET = 86400000;
 
 /**
@@ -158,6 +182,9 @@ static std::shared_ptr<avsCommon::avs::CapabilityConfiguration> getExternalMedia
 /// The @c m_directiveToHandlerMap Map of the directives to their handlers.
 std::unordered_map<NamespaceAndName, std::pair<RequestType, ExternalMediaPlayer::DirectiveHandler>>
     ExternalMediaPlayer::m_directiveToHandlerMap = {
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        {AUTHORIZEDISCOVEREDPLAYERS_DIRECTIVE, std::make_pair(RequestType::NONE, &ExternalMediaPlayer::handleAuthorizeDiscoveredPlayers)},
+#endif
         {LOGIN_DIRECTIVE, std::make_pair(RequestType::LOGIN, &ExternalMediaPlayer::handleLogin)},
         {LOGOUT_DIRECTIVE, std::make_pair(RequestType::LOGOUT, &ExternalMediaPlayer::handleLogout)},
         {PLAY_DIRECTIVE, std::make_pair(RequestType::PLAY, &ExternalMediaPlayer::handlePlay)},
@@ -184,7 +211,12 @@ std::unordered_map<NamespaceAndName, std::pair<RequestType, ExternalMediaPlayer:
 auto audioNonBlockingPolicy = BlockingPolicy(BlockingPolicy::MEDIUM_AUDIO, false);
 auto neitherNonBlockingPolicy = BlockingPolicy(BlockingPolicy::MEDIUMS_NONE, false);
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+static DirectiveHandlerConfiguration g_configuration = {{AUTHORIZEDISCOVEREDPLAYERS_DIRECTIVE, audioNonBlockingPolicy},
+                                                        {PLAY_DIRECTIVE, audioNonBlockingPolicy},
+#else
 static DirectiveHandlerConfiguration g_configuration = {{PLAY_DIRECTIVE, audioNonBlockingPolicy},
+#endif
                                                         {LOGIN_DIRECTIVE, neitherNonBlockingPolicy},
                                                         {LOGOUT_DIRECTIVE, neitherNonBlockingPolicy},
                                                         {RESUME_DIRECTIVE, audioNonBlockingPolicy},
@@ -206,15 +238,21 @@ static DirectiveHandlerConfiguration g_configuration = {{PLAY_DIRECTIVE, audioNo
                                                         {UNFAVORITE_DIRECTIVE, neitherNonBlockingPolicy}};
 
 static std::unordered_map<PlaybackButton, RequestType> g_buttonToRequestType = {
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    // Important Note: This changes default AVS Device SDK behavior.
+    {PlaybackButton::PLAY, RequestType::RESUME},
+    {PlaybackButton::PAUSE, RequestType::PAUSE},
+#else
     {PlaybackButton::PLAY, RequestType::PAUSE_RESUME_TOGGLE},
     {PlaybackButton::PAUSE, RequestType::PAUSE_RESUME_TOGGLE},
+#endif
     {PlaybackButton::NEXT, RequestType::NEXT},
     {PlaybackButton::PREVIOUS, RequestType::PREVIOUS}};
 
 static std::unordered_map<PlaybackToggle, std::pair<RequestType, RequestType>> g_toggleToRequestType = {
     {PlaybackToggle::SHUFFLE, std::make_pair(RequestType::ENABLE_SHUFFLE, RequestType::DISABLE_SHUFFLE)},
     {PlaybackToggle::LOOP, std::make_pair(RequestType::ENABLE_REPEAT, RequestType::DISABLE_REPEAT)},
-    {PlaybackToggle::REPEAT, std::make_pair(RequestType::ENABLE_REPEAT_ONE, RequestType::DISABLE_REPEAT_ONE)},
+    {PlaybackToggle::REPEAT, std::make_pair(RequestType::ENABLE_REPEAT_ONE, RequestType::DISABLE_REPEAT)},
     {PlaybackToggle::THUMBS_UP, std::make_pair(RequestType::FAVORITE, RequestType::DESELECT_FAVORITE)},
     {PlaybackToggle::THUMBS_DOWN, std::make_pair(RequestType::UNFAVORITE, RequestType::DESELECT_UNFAVORITE)}};
 
@@ -282,6 +320,10 @@ std::shared_ptr<ExternalMediaPlayer> ExternalMediaPlayer::create(
     externalMediaPlayer->createAdapters(
         mediaPlayers, speakers, adapterCreationMap, messageSender, focusManager, contextManager);
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    externalMediaPlayer->m_focusManager = focusManager;
+#endif
+
     return externalMediaPlayer;
 }
 
@@ -294,10 +336,18 @@ ExternalMediaPlayer::ExternalMediaPlayer(
         RequiresShutdown{"ExternalMediaPlayer"},
         m_speakerManager{speakerManager},
         m_contextManager{contextManager},
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        m_playbackRouter{playbackRouter},
+        m_focus{FocusState::NONE},
+        m_focusAcquireInProgress{false},
+        m_haltInitiator{HaltInitiator::NONE},
+        m_currentActivity{avsCommon::avs::PlayerActivity::IDLE} {
+#else
         m_playbackRouter{playbackRouter} {
-    // Register all supported capabilities.
+#endif
     m_capabilityConfigurations.insert(getExternalMediaPlayerCapabilityConfiguration());
-
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    // Register all supported capabilities.
     m_capabilityConfigurations.insert(generateCapabilityConfiguration(
         ALEXA_INTERFACE_TYPE,
         PLAYBACKSTATEREPORTER_CAPABILITY_INTERFACE_NAME,
@@ -320,6 +370,7 @@ ExternalMediaPlayer::ExternalMediaPlayer(
         ALEXA_INTERFACE_TYPE,
         FAVORITESCONTROLLER_CAPABILITY_INTERFACE_NAME,
         FAVORITESCONTROLLER_CAPABILITY_INTERFACE_VERSION));
+#endif
 }
 
 std::shared_ptr<CapabilityConfiguration> getExternalMediaPlayerCapabilityConfiguration() {
@@ -328,6 +379,222 @@ std::shared_ptr<CapabilityConfiguration> getExternalMediaPlayerCapabilityConfigu
         EXTERNALMEDIAPLAYER_CAPABILITY_INTERFACE_NAME,
         EXTERNALMEDIAPLAYER_CAPABILITY_INTERFACE_VERSION);
 }
+
+#ifdef EXTERNALMEDIAPLAYER_1_1
+void ExternalMediaPlayer::addAdapterHandler(
+    std::shared_ptr<avsCommon::sdkInterfaces::ExternalMediaAdapterHandlerInterface> adapterHandler) {
+    ACSDK_DEBUG5(LX("addAdapterHandler"));
+    if (!adapterHandler) {
+        ACSDK_ERROR(LX("addAdapterHandler").m("Adapter handler is null."));
+        return;
+    }
+    m_executor.submit([this, adapterHandler]() {
+        ACSDK_DEBUG5(LX("addAdapterHandlerInExecutor"));
+        if (!m_adapterHandlers.insert(adapterHandler).second) {
+            ACSDK_ERROR(LX("addAdapterHandlerInExecutor").m("Duplicate adapter handler."));
+        }
+    });
+}
+
+void ExternalMediaPlayer::removeAdapterHandler(
+    std::shared_ptr<avsCommon::sdkInterfaces::ExternalMediaAdapterHandlerInterface> adapterHandler) {
+    ACSDK_DEBUG5(LX("removeAdapterHandler"));
+    if (!adapterHandler) {
+        ACSDK_ERROR(LX("removeAdapterHandler").m("Adapter handler is null."));
+        return;
+    }
+    m_executor.submit([this, adapterHandler]() {
+        ACSDK_DEBUG5(LX("removeAdapterHandlerInExecutor"));
+        if (m_adapterHandlers.erase(adapterHandler) == 0) {
+            ACSDK_WARN(LX("removeAdapterHandlerInExecutor").m("Nonexistent adapter handler."));
+        }
+    });
+}
+#endif
+
+#ifdef EXTERNALMEDIAPLAYER_1_1
+void ExternalMediaPlayer::executeOnFocusChanged(avsCommon::avs::FocusState newFocus) {
+    ACSDK_DEBUG1(
+        LX("executeOnFocusChanged").d("from", m_focus).d("to", newFocus).d("m_currentActivity", m_currentActivity));
+    if (m_focus == newFocus) {
+        m_focusAcquireInProgress = false;
+        return;
+    }
+    m_focus = newFocus;
+    m_focusAcquireInProgress = false;
+
+    if (!m_playerInFocus.empty()) {
+        auto adapterIt = m_adapters.find(m_playerInFocus);
+
+        if (m_adapters.end() == adapterIt) {
+            switch (newFocus) {
+                case FocusState::FOREGROUND: {
+                    /*
+                     * If the system is currently in a pause initiated from AVS, on focus change
+                     * to FOREGROUND do not try to resume. This happens when a user calls
+                     * "Alexa, pause" while Spotify is PLAYING. This moves the adapter to
+                     * BACKGROUND focus. AVS then sends a PAUSE request and after calling the
+                     * ESDK pause when the adapter switches to FOREGROUND focus we do not want
+                     * the adapter to start PLAYING.
+                     */
+                    if (m_haltInitiator == HaltInitiator::EXTERNAL_PAUSE) {
+                        return;
+                    }
+
+                    switch (m_currentActivity) {
+                        case PlayerActivity::IDLE:
+                        case PlayerActivity::STOPPED:
+                        case PlayerActivity::FINISHED:
+                            return;
+                        case PlayerActivity::PAUSED: {
+                            // A focus change to foreground when paused means we should resume the current song.
+                            ACSDK_DEBUG1(LX("executeOnFocusChanged").d("action", "resumeExternalMediaPlayer"));
+                            setCurrentActivity(avsCommon::avs::PlayerActivity::PLAYING);
+                            // At this point a request to play another artist on Spotify may have already
+                            // been processed (or is being processed) and we do not want to send resume here.
+                            if (m_haltInitiator != HaltInitiator::NONE) {
+                                for (auto adapterHandler : m_adapterHandlers) {
+                                    adapterHandler->playControlForPlayer(m_playerInFocus, RequestType::RESUME);
+                                }
+                            }
+                        }
+                            return;
+                        case PlayerActivity::PLAYING:
+                        case PlayerActivity::BUFFER_UNDERRUN:
+                            // We should already have foreground focus in these states; break out to the warning below.
+                            break;
+                    }
+                    break;
+                }
+                case FocusState::BACKGROUND:
+                    switch (m_currentActivity) {
+                        case PlayerActivity::STOPPED:
+                        // We can also end up here with an empty queue if we've asked MediaPlayer to play, but playback
+                        // hasn't started yet, so we fall through to call @c pause() here as well.
+                        case PlayerActivity::FINISHED:
+                        case PlayerActivity::IDLE:
+                        // Note: can be in FINISHED or IDLE while waiting for MediaPlayer to start playing, so we fall
+                        // through to call @c pause() here as well.
+                        case PlayerActivity::PAUSED:
+                        // Note: can be in PAUSED while we're trying to resume, in which case we still want to pause, so we
+                        // fall through to call @c pause() here as well.
+                        case PlayerActivity::PLAYING:
+                        case PlayerActivity::BUFFER_UNDERRUN: {
+                            // If we get pushed into the background while playing or buffering, pause the current song.
+                            ACSDK_DEBUG1(LX("executeOnFocusChanged").d("action", "pauseExternalMediaPlayer"));
+                            if (m_haltInitiator != HaltInitiator::EXTERNAL_PAUSE) {
+                                m_haltInitiator = HaltInitiator::FOCUS_CHANGE_PAUSE;
+                            }
+                            setCurrentActivity(avsCommon::avs::PlayerActivity::PAUSED);
+                            for (auto adapterHandler : m_adapterHandlers) {
+                                adapterHandler->playControlForPlayer(m_playerInFocus, RequestType::PAUSE);
+                            }
+                        }
+                            return;
+                    }
+                    break;
+                case FocusState::NONE:
+                    switch (m_currentActivity) {
+                        case PlayerActivity::IDLE:
+                        case PlayerActivity::STOPPED:
+                        case PlayerActivity::FINISHED:
+                            // Nothing to more to do if we're already not playing; we got here because the act of stopping
+                            // caused the channel to be released, which in turn caused this callback.
+                            return;
+                        case PlayerActivity::PLAYING:
+                        case PlayerActivity::PAUSED:
+                        case PlayerActivity::BUFFER_UNDERRUN:
+                            // If the focus change came in while we were in a 'playing' state, we need to stop because we are
+                            // yielding the channel.
+                            ACSDK_DEBUG1(LX("executeOnFocusChanged").d("action", "stopExternalMediaPlayer"));
+                            m_haltInitiator = HaltInitiator::FOCUS_CHANGE_STOP;
+                            setCurrentActivity(avsCommon::avs::PlayerActivity::STOPPED);
+                            for (auto adapterHandler : m_adapterHandlers) {
+                                adapterHandler->playControlForPlayer(m_playerInFocus, RequestType::STOP);
+                            }
+                            return;
+                    }
+                    break;
+            }
+        }
+    }
+    ACSDK_WARN(LX("unexpectedExecuteOnFocusChanged").d("newFocus", newFocus).d("m_currentActivity", m_currentActivity));
+}
+
+void ExternalMediaPlayer::onFocusChanged(FocusState newFocus) {
+    ACSDK_DEBUG(LX("onFocusChanged").d("newFocus", newFocus));
+    m_executor.submit([this, newFocus] { executeOnFocusChanged(newFocus); });
+
+    switch (newFocus) {
+        case FocusState::FOREGROUND:
+            // Could wait for playback to actually start, but there's no real benefit to waiting, and long delays in
+            // buffering could result in timeouts, so returning immediately for this case.
+            return;
+        case FocusState::BACKGROUND: {
+            // Ideally expecting to see a transition to PAUSED, but in terms of user-observable changes, a move to any
+            // of PAUSED/STOPPED/FINISHED will indicate that it's safe for another channel to move to the foreground.
+            auto predicate = [this] {
+                switch (m_currentActivity) {
+                    case PlayerActivity::IDLE:
+                    case PlayerActivity::PAUSED:
+                    case PlayerActivity::STOPPED:
+                    case PlayerActivity::FINISHED:
+                        return true;
+                    case PlayerActivity::PLAYING:
+                    case PlayerActivity::BUFFER_UNDERRUN:
+                        return false;
+                }
+                ACSDK_ERROR(LX("onFocusChangedFailed")
+                                .d("reason", "unexpectedActivity")
+                                .d("m_currentActivity", m_currentActivity));
+                return false;
+            };
+            std::unique_lock<std::mutex> lock(m_currentActivityMutex);
+            if (!m_currentActivityConditionVariable.wait_for(lock, TIMEOUT, predicate)) {
+                ACSDK_ERROR(
+                    LX("onFocusChangedTimedOut").d("newFocus", newFocus).d("m_currentActivity", m_currentActivity));
+            }
+        }
+            return;
+        case FocusState::NONE: {
+            // Need to wait for STOPPED or FINISHED, indicating that we have completely ended playback.
+            auto predicate = [this] {
+                switch (m_currentActivity) {
+                    case PlayerActivity::IDLE:
+                    case PlayerActivity::STOPPED:
+                    case PlayerActivity::FINISHED:
+                        return true;
+                    case PlayerActivity::PLAYING:
+                    case PlayerActivity::PAUSED:
+                    case PlayerActivity::BUFFER_UNDERRUN:
+                        return false;
+                }
+                ACSDK_ERROR(LX("onFocusChangedFailed")
+                                .d("reason", "unexpectedActivity")
+                                .d("m_currentActivity", m_currentActivity));
+                return false;
+            };
+            std::unique_lock<std::mutex> lock(m_currentActivityMutex);
+            if (!m_currentActivityConditionVariable.wait_for(lock, TIMEOUT, predicate)) {
+                ACSDK_ERROR(LX("onFocusChangedFailed")
+                                .d("reason", "activityChangeTimedOut")
+                                .d("newFocus", newFocus)
+                                .d("m_currentActivity", m_currentActivity));
+            }
+        }
+            return;
+    }
+    ACSDK_ERROR(LX("onFocusChangedFailed").d("reason", "unexpectedFocusState").d("newFocus", newFocus));
+}
+
+void ExternalMediaPlayer::onContextAvailable(const std::string&) {
+    // default no-op
+}
+
+void ExternalMediaPlayer::onContextFailure(const avsCommon::sdkInterfaces::ContextRequestError) {
+    // default no-op
+}
+#endif
 
 void ExternalMediaPlayer::provideState(
     const avsCommon::avs::NamespaceAndName& stateProviderName,
@@ -402,6 +669,12 @@ std::shared_ptr<ExternalMediaAdapterInterface> ExternalMediaPlayer::preprocessDi
         return nullptr;
     }
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    if (m_adapters.empty()) { // use handlers when there are no adapters
+        return nullptr;
+    }
+#endif
+
     auto adapterIt = m_adapters.find(playerId);
     if (adapterIt == m_adapters.end()) {
         ACSDK_ERROR(LX("preprocessDirectiveFailed").d("reason", "noAdapterForPlayerId").d(PLAYER_ID, playerId));
@@ -419,11 +692,36 @@ std::shared_ptr<ExternalMediaAdapterInterface> ExternalMediaPlayer::preprocessDi
     return adapter;
 }
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+void ExternalMediaPlayer::handleAuthorizeDiscoveredPlayers(std::shared_ptr<DirectiveInfo> info, RequestType request) {
+    rapidjson::Document payload;
+
+    if (!parseDirectivePayload(info, &payload)) {
+        return;
+    }
+
+    m_executor.submit([this, info]() {
+        for (auto adapterHandler : m_adapterHandlers) {
+            adapterHandler->authorizeDiscoveredPlayers(info->directive->getPayload());
+        }
+        setHandlingCompleted(info);
+    });
+}
+#endif
+
 void ExternalMediaPlayer::handleLogin(std::shared_ptr<DirectiveInfo> info, RequestType request) {
     rapidjson::Document payload;
 
     auto adapter = preprocessDirective(info, &payload);
     if (!adapter) {
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        m_executor.submit([this, info]() {
+            for (auto adapterHandler : m_adapterHandlers) {
+                adapterHandler->login(info->directive->getPayload());
+            }
+            setHandlingCompleted(info);
+        });
+#endif
         return;
     }
 
@@ -462,6 +760,14 @@ void ExternalMediaPlayer::handleLogout(std::shared_ptr<DirectiveInfo> info, Requ
 
     auto adapter = preprocessDirective(info, &payload);
     if (!adapter) {
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        m_executor.submit([this, info]() {
+            for (auto adapterHandler : m_adapterHandlers) {
+                adapterHandler->logout(info->directive->getPayload());
+            }
+            setHandlingCompleted(info);
+        });
+#endif
         return;
     }
 
@@ -474,6 +780,15 @@ void ExternalMediaPlayer::handlePlay(std::shared_ptr<DirectiveInfo> info, Reques
 
     auto adapter = preprocessDirective(info, &payload);
     if (!adapter) {
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        setHaltInitiatorRequestHelper(request);
+        m_executor.submit([this, info]() {
+            for (auto adapterHandler : m_adapterHandlers) {
+                adapterHandler->play(info->directive->getPayload());
+            }
+            setHandlingCompleted(info);
+        });
+#endif
         return;
     }
 
@@ -494,8 +809,41 @@ void ExternalMediaPlayer::handlePlay(std::shared_ptr<DirectiveInfo> info, Reques
         index = 0;
     }
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    std::string skillToken;
+    if (!jsonUtils::retrieveValue(payload, "skillToken", &skillToken)) {
+        ACSDK_ERROR(LX("handleDirectiveFailed").d("reason", "nullSkillToken"));
+        sendExceptionEncounteredAndReportFailed(info, "missing skillToken in Play directive");
+        return;
+    }
+
+    std::string playbackSessionId;
+    if (!jsonUtils::retrieveValue(payload, "playbackSessionId", &playbackSessionId)) {
+        ACSDK_ERROR(LX("handleDirectiveFailed").d("reason", "nullPlaybackSessionId"));
+        sendExceptionEncounteredAndReportFailed(info, "missing playbackSessionId in Play directive");
+        return;
+    }
+
+    std::string navigation;
+    if (!jsonUtils::retrieveValue(payload, "navigation", &navigation)) {
+        ACSDK_ERROR(LX("handleDirectiveFailed").d("reason", "nullNavigation"));
+        sendExceptionEncounteredAndReportFailed(info, "missing navigation in Play directive");
+        return;
+    }
+
+    bool preload;
+    if (!jsonUtils::retrieveValue(payload, "preload", &preload)) {
+        ACSDK_ERROR(LX("handleDirectiveFailed").d("reason", "nullPreload"));
+        sendExceptionEncounteredAndReportFailed(info, "missing preload in Play directive");
+        return;
+    }
+
+    setHandlingCompleted(info);
+    adapter->handlePlay(playbackContextToken, index, std::chrono::milliseconds(offset), skillToken, playbackSessionId, navigation, preload);
+#else
     setHandlingCompleted(info);
     adapter->handlePlay(playbackContextToken, index, std::chrono::milliseconds(offset));
+#endif
 }
 
 void ExternalMediaPlayer::handleSeek(std::shared_ptr<DirectiveInfo> info, RequestType request) {
@@ -503,6 +851,14 @@ void ExternalMediaPlayer::handleSeek(std::shared_ptr<DirectiveInfo> info, Reques
 
     auto adapter = preprocessDirective(info, &payload);
     if (!adapter) {
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        m_executor.submit([this, info]() {
+            for (auto adapterHandler : m_adapterHandlers) {
+                adapterHandler->seek(info->directive->getPayload());
+            }
+            setHandlingCompleted(info);
+        });
+#endif
         return;
     }
 
@@ -522,6 +878,14 @@ void ExternalMediaPlayer::handleAdjustSeek(std::shared_ptr<DirectiveInfo> info, 
 
     auto adapter = preprocessDirective(info, &payload);
     if (!adapter) {
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        m_executor.submit([this, info]() {
+            for (auto adapterHandler : m_adapterHandlers) {
+                adapterHandler->adjustSeek(info->directive->getPayload());
+            }
+            setHandlingCompleted(info);
+        });
+#endif
         return;
     }
 
@@ -549,6 +913,15 @@ void ExternalMediaPlayer::handlePlayControl(std::shared_ptr<DirectiveInfo> info,
 
     auto adapter = preprocessDirective(info, &payload);
     if (!adapter) {
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        setHaltInitiatorRequestHelper(request);
+        m_executor.submit([this, info, request]() {
+            for (auto adapterHandler : m_adapterHandlers) {
+                adapterHandler->playControl(info->directive->getPayload(),request);
+            }
+            setHandlingCompleted(info);
+        });
+#endif
         return;
     }
 
@@ -567,6 +940,38 @@ DirectiveHandlerConfiguration ExternalMediaPlayer::getConfiguration() const {
     return g_configuration;
 }
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+
+void ExternalMediaPlayer::setCurrentActivity(const avsCommon::avs::PlayerActivity currentActivity) {
+    ACSDK_DEBUG9(LX("setCurrentActivity").d("from", m_currentActivity).d("to", currentActivity));
+    {
+        std::lock_guard<std::mutex> lock(m_currentActivityMutex);
+        m_currentActivity = currentActivity;
+    }
+    m_currentActivityConditionVariable.notify_all();
+}
+
+void ExternalMediaPlayer::setPlayerInFocus(const std::string& playerInFocus, bool focusAcquire) {
+    ACSDK_DEBUG9(LX("setPlayerInFocus").d("playerInFocus", playerInFocus).d("focusAcquire", focusAcquire ? "true" : "false"));
+    if (focusAcquire) {
+        m_playerInFocus = playerInFocus;
+        m_playbackRouter->setHandler(shared_from_this());
+        // Acquire the channel and have this ExternalMediaPlayer manage the focus state.
+        if (m_focus == FocusState::NONE && m_focusAcquireInProgress != true) {
+            m_currentActivity = avsCommon::avs::PlayerActivity::IDLE;
+            m_haltInitiator = HaltInitiator::NONE;
+            m_focusAcquireInProgress = true;
+            m_focusManager->acquireChannel(CHANNEL_NAME, shared_from_this(), FOCUS_MANAGER_ACTIVITY_ID);
+        }
+    }
+    else if (playerInFocus.compare(m_playerInFocus) == 0 && m_focus != avsCommon::avs::FocusState::NONE) {
+        // We only release the channel when the player is the player in focus.
+        m_focusManager->releaseChannel(CHANNEL_NAME, shared_from_this());
+    }
+}
+
+#endif
+
 void ExternalMediaPlayer::setPlayerInFocus(const std::string& playerInFocus) {
     ACSDK_DEBUG9(LX("setPlayerInFocus").d("playerInFocus", playerInFocus));
     m_playerInFocus = playerInFocus;
@@ -574,19 +979,28 @@ void ExternalMediaPlayer::setPlayerInFocus(const std::string& playerInFocus) {
 }
 
 void ExternalMediaPlayer::onButtonPressed(PlaybackButton button) {
+    auto buttonIt = g_buttonToRequestType.find(button);
+
+    if (g_buttonToRequestType.end() == buttonIt) {
+        ACSDK_ERROR(LX("ButtonToRequestTypeNotFound").d("button", button));
+        return;
+    }
+
     if (!m_playerInFocus.empty()) {
         auto adapterIt = m_adapters.find(m_playerInFocus);
 
         if (m_adapters.end() == adapterIt) {
+#ifdef EXTERNALMEDIAPLAYER_1_1
+            setHaltInitiatorRequestHelper(buttonIt->second);
+            m_executor.submit([this, buttonIt]() {
+                for (auto adapterHandler : m_adapterHandlers) {
+                    adapterHandler->playControlForPlayer(m_playerInFocus, buttonIt->second);
+                }
+            });
+#else
             // Should never reach here as playerInFocus is always set based on a contract with AVS.
             ACSDK_ERROR(LX("AdapterNotFound").d("player", m_playerInFocus));
-            return;
-        }
-
-        auto buttonIt = g_buttonToRequestType.find(button);
-
-        if (g_buttonToRequestType.end() == buttonIt) {
-            ACSDK_ERROR(LX("ButtonToRequestTypeNotFound").d("button", button));
+#endif
             return;
         }
 
@@ -595,37 +1009,49 @@ void ExternalMediaPlayer::onButtonPressed(PlaybackButton button) {
 }
 
 void ExternalMediaPlayer::onTogglePressed(PlaybackToggle toggle, bool action) {
+    auto toggleIt = g_toggleToRequestType.find(toggle);
+
+    if (g_toggleToRequestType.end() == toggleIt) {
+        ACSDK_ERROR(LX("ToggleToRequestTypeNotFound").d("toggle", toggle));
+        return;
+    }
+
+    // toggleStates map is <SELECTED,DESELECTED>
+    auto toggleStates = toggleIt->second;
+
     if (!m_playerInFocus.empty()) {
         auto adapterIt = m_adapters.find(m_playerInFocus);
 
         if (m_adapters.end() == adapterIt) {
+#ifdef EXTERNALMEDIAPLAYER_1_1
+            m_executor.submit([this, action, toggleStates]() {
+                for (auto adapterHandler : m_adapterHandlers) {
+                    if (action) {
+                        adapterHandler->playControlForPlayer(m_playerInFocus, toggleStates.first);
+                    }
+                    else {
+                        adapterHandler->playControlForPlayer(m_playerInFocus, toggleStates.second);
+                    }
+                }
+            });
+#else
             // Should never reach here as playerInFocus is always set based on a contract with AVS.
             ACSDK_ERROR(LX("AdapterNotFound").d("player", m_playerInFocus));
+#endif
             return;
         }
 
-        auto toggleIt = g_toggleToRequestType.find(toggle);
-
-        if (g_toggleToRequestType.end() == toggleIt) {
-            ACSDK_ERROR(LX("ToggleToRequestTypeNotFound").d("toggle", toggle));
-            return;
-        }
-
-        auto adapter = adapterIt->second;
-
-        // toggleStates map is <SELECTED,DESELECTED>
-        auto toggleStates = toggleIt->second;
-
-        if (action) {
-            adapter->handlePlayControl(toggleStates.first);
-        } else {
-            adapterIt->second->handlePlayControl(toggleStates.second);
-        }
+        adapterIt->second->handlePlayControl(action ? toggleStates.first : toggleStates.second);
     }
 }
 
 void ExternalMediaPlayer::doShutdown() {
     m_executor.shutdown();
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    m_adapterHandlers.clear();
+    m_focusManager.reset();
+#endif
+     // Reset th
     // Reset the EMP from being a state provider. If not there would be calls from the adapter to provide context
     // which will try to add tasks to the executor thread.
     m_contextManager->setStateProvider(SESSION_STATE, nullptr);
@@ -652,6 +1078,28 @@ void ExternalMediaPlayer::removeDirective(std::shared_ptr<DirectiveInfo> info) {
         CapabilityAgent::removeDirective(info->directive->getMessageId());
     }
 }
+#ifdef EXTERNALMEDIAPLAYER_1_1
+void ExternalMediaPlayer::setHaltInitiatorRequestHelper(RequestType request) {
+    switch (request) {
+        case RequestType::PAUSE:
+            m_haltInitiator = HaltInitiator::EXTERNAL_PAUSE;
+            break;
+        case RequestType::PAUSE_RESUME_TOGGLE:
+            if (m_currentActivity == avsCommon::avs::PlayerActivity::PLAYING ||
+                    (m_currentActivity == avsCommon::avs::PlayerActivity::PAUSED &&
+                    m_haltInitiator == HaltInitiator::FOCUS_CHANGE_PAUSE)) {
+                m_haltInitiator = HaltInitiator::EXTERNAL_PAUSE;
+            }
+            break;
+        case RequestType::PLAY:
+        case RequestType::RESUME:
+            m_haltInitiator = HaltInitiator::NONE;
+            break;
+        default:
+            break;
+    }
+}
+#endif
 
 void ExternalMediaPlayer::setHandlingCompleted(std::shared_ptr<DirectiveInfo> info) {
     if (info && info->result) {
@@ -683,10 +1131,28 @@ void ExternalMediaPlayer::executeProvideState(
     ACSDK_DEBUG(LX("executeProvideState").d("sendToken", sendToken).d("stateRequestToken", stateRequestToken));
     std::string state;
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    std::vector<avsCommon::sdkInterfaces::externalMediaPlayer::AdapterState> adapterStates;
+    if (m_adapters.empty()) { // use handlers when there are no adapters
+        for (auto adapterHandler : m_adapterHandlers) {
+            auto handlerAdapterStates = adapterHandler->getAdapterStates();
+            adapterStates.insert(adapterStates.end(), handlerAdapterStates.begin(), handlerAdapterStates.end());
+        }
+    }
+#endif
+
     if (stateProviderName == SESSION_STATE) {
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        state = provideSessionState(adapterStates);
+#else
         state = provideSessionState();
+#endif
     } else if (stateProviderName == PLAYBACK_STATE) {
+#ifdef EXTERNALMEDIAPLAYER_1_1
+        state = providePlaybackState(adapterStates);
+#else
         state = providePlaybackState();
+#endif
     } else {
         ACSDK_ERROR(LX("executeProvideState").d("reason", "unknownStateProviderName"));
         return;
@@ -704,12 +1170,19 @@ void ExternalMediaPlayer::executeProvideState(
     }
 }
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+std::string ExternalMediaPlayer::provideSessionState(std::vector<avsCommon::sdkInterfaces::externalMediaPlayer::AdapterState> adapterStates) {
+#else
 std::string ExternalMediaPlayer::provideSessionState() {
+#endif
     rapidjson::Document state(rapidjson::kObjectType);
     rapidjson::Document::AllocatorType& stateAlloc = state.GetAllocator();
 
     state.AddMember(rapidjson::StringRef(PLAYER_IN_FOCUS), m_playerInFocus, stateAlloc);
-
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    state.AddMember(rapidjson::StringRef(SPI_VERSION), rapidjson::StringRef(SPI_VERSION_DEFAULT), stateAlloc);
+    state.AddMember(rapidjson::StringRef(AGENT), rapidjson::StringRef(AGENT_DEFAULT), stateAlloc);
+#endif
     rapidjson::Value players(rapidjson::kArrayType);
     for (const auto& adapter : m_adapters) {
         if (!adapter.second) {
@@ -721,6 +1194,16 @@ std::string ExternalMediaPlayer::provideSessionState() {
         ObservableSessionProperties update{state.loggedIn, state.userName};
         notifyObservers(state.playerId, &update);
     }
+    
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    for (auto adapterState : adapterStates) {
+        if (adapterState.sessionState.playerId.empty()) {
+            continue;
+        }
+        rapidjson::Value playerJson = buildSessionState(adapterState.sessionState, stateAlloc);
+        players.PushBack(playerJson, stateAlloc);
+    }
+#endif
 
     state.AddMember(rapidjson::StringRef(PLAYERS), players, stateAlloc);
 
@@ -734,7 +1217,11 @@ std::string ExternalMediaPlayer::provideSessionState() {
     return buffer.GetString();
 }
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+std::string ExternalMediaPlayer::providePlaybackState(std::vector<avsCommon::sdkInterfaces::externalMediaPlayer::AdapterState> adapterStates) {
+#else
 std::string ExternalMediaPlayer::providePlaybackState() {
+#endif
     rapidjson::Document state(rapidjson::kObjectType);
     rapidjson::Document::AllocatorType& stateAlloc = state.GetAllocator();
 
@@ -755,6 +1242,13 @@ std::string ExternalMediaPlayer::providePlaybackState() {
         ObservablePlaybackStateProperties update{state.state, state.trackName};
         notifyObservers(state.playerId, &update);
     }
+
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    for (auto adapterState : adapterStates) {
+        rapidjson::Value playerJson = buildPlaybackState(adapterState.playbackState, stateAlloc);
+        players.PushBack(playerJson, stateAlloc);
+    }
+#endif
 
     state.AddMember(PLAYERS, players, stateAlloc);
 

@@ -31,6 +31,15 @@ const char USERNAME[] = "username";
 const char IS_GUEST[] = "isGuest";
 const char LAUNCHED[] = "launched";
 const char ACTIVE[] = "active";
+#ifdef EXTERNALMEDIAPLAYER_1_1
+const char SPI_VERSION[] = "spiVersion";
+const char SPI_VERSION_DEFAULT[] = "1.0";
+const char PLAYER_COOKIE[] = "playerCookie";
+const char SKILL_TOKEN[] = "skillToken";
+const char PLAYBACK_SESSION_ID[] = "playbackSessionId";
+const char AGENT[] = "agent";
+const char AGENT_DEFAULT[] = "RUHAV8PRLD";
+#endif
 
 // The key values used in the context payload from External Media Player to AVS.
 const char STATE[] = "state";

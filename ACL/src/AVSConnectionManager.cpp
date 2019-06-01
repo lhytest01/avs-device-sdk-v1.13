@@ -138,7 +138,9 @@ void AVSConnectionManager::reconnect() {
 }
 
 void AVSConnectionManager::sendMessage(std::shared_ptr<avsCommon::avs::MessageRequest> request) {
-    m_messageRouter->sendMessage(request);
+    if (m_messageRouter != nullptr) {
+        m_messageRouter->sendMessage(request);
+    }
 }
 
 bool AVSConnectionManager::isConnected() const {

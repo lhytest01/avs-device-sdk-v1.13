@@ -62,6 +62,18 @@ void DirectiveSequencer::setDialogRequestId(const std::string& dialogRequestId) 
     m_directiveProcessor->setDialogRequestId(dialogRequestId);
 }
 
+std::string DirectiveSequencer::getCurrentDialogRequestId() {
+    return m_directiveProcessor->getCurrentDialogRequestId();
+}
+
+bool DirectiveSequencer::isCurrentDialogRequestOnline() {
+    return m_directiveProcessor->isCurrentDialogRequestOnline();
+}
+
+void DirectiveSequencer::setIsCurrentDialogRequestOnline(bool isOnline) {
+    m_directiveProcessor->setIsCurrentDialogRequestOnline(isOnline);
+}
+
 bool DirectiveSequencer::onDirective(std::shared_ptr<AVSDirective> directive) {
     if (!directive) {
         ACSDK_ERROR(LX("onDirectiveFailed").d("action", "ignored").d("reason", "nullptrDirective"));

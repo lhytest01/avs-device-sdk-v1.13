@@ -20,6 +20,11 @@
 #include <memory>
 #include <string>
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+#include <AVSCommon/AVS/CapabilityConfiguration.h>
+#include <AVSCommon/AVS/PlayerActivity.h>
+#include <AVSCommon/SDKInterfaces/ExternalMediaAdapterHandlerInterface.h>
+#endif
 #include <AVSCommon/AVS/CapabilityAgent.h>
 #include <AVSCommon/AVS/DirectiveHandlerConfiguration.h>
 #include <AVSCommon/SDKInterfaces/CapabilityConfigurationInterface.h>
@@ -40,6 +45,23 @@
 namespace alexaClientSDK {
 namespace capabilityAgents {
 namespace externalMediaPlayer {
+
+#ifdef EXTERNALMEDIAPLAYER_1_1
+/// Enum to identify the initiator type of a stop.
+enum class HaltInitiator {
+    /// The system is not halted.
+    NONE,
+
+    /// Voice initiated Pause request from AVS/Pause from Spotify Connect.
+    EXTERNAL_PAUSE,
+
+    /// Pause was initiated when focus changed from FOREGROUND to BACKGROUND.
+    FOCUS_CHANGE_PAUSE,
+
+    /// Stop initiated when focus changed from FOREGROUND/BACKGROUND to NONE.
+    FOCUS_CHANGE_STOP
+};
+#endif
 
 /**
  * This class implements the @c ExternalMediaPlayer capability agent. This agent is responsible for handling
@@ -104,6 +126,21 @@ public:
         std::shared_ptr<avsCommon::sdkInterfaces::ExceptionEncounteredSenderInterface> exceptionSender,
         std::shared_ptr<avsCommon::sdkInterfaces::PlaybackRouterInterface> playbackRouter);
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    void addAdapterHandler(std::shared_ptr<avsCommon::sdkInterfaces::ExternalMediaAdapterHandlerInterface> adapterHandler);
+    void removeAdapterHandler(std::shared_ptr<avsCommon::sdkInterfaces::ExternalMediaAdapterHandlerInterface> adapterHandler);
+#endif
+
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    void executeOnFocusChanged(avsCommon::avs::FocusState newFocus);
+
+    void onFocusChanged(avsCommon::avs::FocusState newFocus) override;
+
+    void onContextAvailable(const std::string& jsonContext) override;
+
+    void onContextFailure(const avsCommon::sdkInterfaces::ContextRequestError error) override;
+#endif
+
     /// @name StateProviderInterface Functions
     /// @{
     void provideState(const avsCommon::avs::NamespaceAndName& stateProviderName, unsigned int stateRequestToken)
@@ -129,6 +166,12 @@ public:
 
     /// @name Overridden ExternalMediaPlayerInterface methods.
     /// @{
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    virtual void setCurrentActivity(const avsCommon::avs::PlayerActivity currentActivity) override;
+
+    virtual void setPlayerInFocus(const std::string& playerInFocus, bool focusAcquire) override;
+#endif
+
     virtual void setPlayerInFocus(const std::string& playerInFocus) override;
     /// @}
 
@@ -174,12 +217,20 @@ private:
     /**
      * This method returns the ExternalMediaPlayer session state registered in the ExternalMediaPlayer namespace.
      */
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    std::string provideSessionState(std::vector<avsCommon::sdkInterfaces::externalMediaPlayer::AdapterState> adapterStates);
+#else
     std::string provideSessionState();
+#endif
 
     /**
      * This method returns the Playback state registered in the Alexa.PlaybackStateReporter state.
      */
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    std::string providePlaybackState(std::vector<avsCommon::sdkInterfaces::externalMediaPlayer::AdapterState> adapterStates);
+#else
     std::string providePlaybackState();
+#endif
 
     /**
      * This function deserializes a @c Directive's payload into a @c rapidjson::Document.
@@ -221,6 +272,15 @@ private:
         std::shared_ptr<avsCommon::sdkInterfaces::MessageSenderInterface> messageSender,
         std::shared_ptr<avsCommon::sdkInterfaces::FocusManagerInterface> focusManager,
         std::shared_ptr<avsCommon::sdkInterfaces::ContextManagerInterface> contextManager);
+
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    /**
+     * Set the appropriate halt initiator for the request.
+     *
+     * @param The type of the request.
+     */
+    void setHaltInitiatorRequestHelper(avsCommon::sdkInterfaces::externalMediaPlayer::RequestType request);
+#endif
 
     /**
      * Send the handling completed notification and clean up the resources the specified @c DirectiveInfo.
@@ -277,6 +337,19 @@ private:
     std::shared_ptr<avsCommon::sdkInterfaces::externalMediaPlayer::ExternalMediaAdapterInterface> preprocessDirective(
         std::shared_ptr<DirectiveInfo> info,
         rapidjson::Document* document);
+
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    /**
+     * Handler for AuthorizeDiscoveredPlayers directive.
+     *
+     * @param info The DirectiveInfo to be processed.
+     * @param The type of the request. Will be NONE for the
+     *        handleAuthorizeDiscoveredPlayers case.
+     */
+    void handleAuthorizeDiscoveredPlayers(
+        std::shared_ptr<DirectiveInfo> info,
+        avsCommon::sdkInterfaces::externalMediaPlayer::RequestType request);
+#endif
 
     /**
      * Handler for login directive.
@@ -393,6 +466,33 @@ private:
     std::unordered_set<
         std::shared_ptr<avsCommon::sdkInterfaces::externalMediaPlayer::ExternalMediaPlayerObserverInterface>>
         m_observers;
+
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    std::unordered_set<std::shared_ptr<avsCommon::sdkInterfaces::ExternalMediaAdapterHandlerInterface>> m_adapterHandlers;
+#endif
+
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    /// The @c FocusManager used to manage usage of the channel.
+    std::shared_ptr<avsCommon::sdkInterfaces::FocusManagerInterface> m_focusManager;
+
+    /// The current focus state of the @c AudioPlayer on the content channel.
+    avsCommon::avs::FocusState m_focus;
+
+    /// bool to identify if acquire of focus is currently in progress.
+    bool m_focusAcquireInProgress;
+
+    /// Enum to identify the type and source of the halt request.
+    HaltInitiator m_haltInitiator;
+
+    /// The current state of the @c ExternalMediaPlayer.
+    avsCommon::avs::PlayerActivity m_currentActivity;
+
+    /// Protects writes to @c m_currentActivity and waiting on @c m_currentActivityConditionVariable.
+    std::mutex m_currentActivityMutex;
+
+    /// Provides notifications of changes to @c m_currentActivity.
+    std::condition_variable m_currentActivityConditionVariable;
+#endif
 
     /**
      * @c Executor which queues up operations from asynchronous API calls.

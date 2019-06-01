@@ -267,6 +267,21 @@ struct AdapterSessionState {
      */
     bool active;
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    /// The service provider interface (SPI) version.
+    std::string spiVersion;
+
+    /// The playerCookie to select version-specific content or actions.
+    std::string playerCookie;
+
+    /// An opaque token for the domain or skill that is presently associated with this player.
+    std::string skillToken;
+
+    /// A universally unique identifier (UUID) generated to the RFC 4122 specification.
+    std::string playbackSessionId;
+
+#endif
+
     /**
      * The accessToken used to login a user. The access token may also be used as a bearer token if the adapter
      * makes an authenticated Web API to the music provider.
@@ -425,6 +440,27 @@ public:
      */
     virtual void handleLogout() = 0;
 
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    /**
+     * Method to allow a user to initiate play from a third party music service provider based on a play context.
+     *
+     * @param playContextToken Play context {Track/playlist/album/artist/station/podcast} identifier.
+     * @param index The index of the media item in the container, if the container is indexable.
+     * @param offset The offset position within media item, in milliseconds.
+     * @param skillToken An opaque token for the domain or skill that is presently associated with this player.
+     * @param playbackSessionId A universally unique identifier (UUID) generated to the RFC 4122 specification.
+     * @param navigation Communicates desired visual display behavior for the app associated with playback.
+     * @param preload If true, this Play directive is intended to preload the identified content only but not begin playback.
+     */
+    virtual void handlePlay(std::string& playContextToken,
+                            int64_t index,
+                            std::chrono::milliseconds offset,
+                            std::string& skillToken,
+                            std::string& playbackSessionId,
+                            std::string& navigation, // DEFAULT, NONE, FOREGROUND
+                            bool preload) = 0;
+#else
+
     /**
      * Method to allow a user to initiate play from a third party music service provider based on a play context.
      *
@@ -433,6 +469,7 @@ public:
      * @param offset The offset position within media item, in milliseconds.
      */
     virtual void handlePlay(std::string& playContextToken, int64_t index, std::chrono::milliseconds offset) = 0;
+#endif
 
     /**
      * Method to initiate the different types of play control like PLAY/PAUSE/RESUME/NEXT/...

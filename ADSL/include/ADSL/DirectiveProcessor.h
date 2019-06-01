@@ -82,6 +82,12 @@ public:
      */
     void setDialogRequestId(const std::string& dialogRequestId);
 
+    std::string getCurrentDialogRequestId();
+
+    void setIsCurrentDialogRequestOnline(bool isOnline);
+
+    bool isCurrentDialogRequestOnline();
+
     /**
      * Queue an @c AVSDirective for handling by whatever @c DirectiveHandler was registered to handle it.
      *
@@ -184,6 +190,12 @@ private:
      */
     void processingLoop();
 
+    void setIsCurrentDialogRequestOnlineLocked(bool isOnline);
+
+    bool isCurrentDialogRequestOnlineLocked();
+
+    std::string getCurrentDialogRequestIdLocked();
+
     /**
      * Process (cancel) all the items in @c m_cancelingQueue.
      * @note This method must only be called by threads that have acquired @c m_mutex.
@@ -284,6 +296,9 @@ private:
 
     /// Whether or not the @c DirectiveProcessor is enabled.
     bool m_isEnabled;
+
+    /// Whether the current dialog request is from AVS (online) or AHE (offline)
+    bool m_isDialogRequestOnline;
 
     /// The current @c dialogRequestId
     std::string m_dialogRequestId;

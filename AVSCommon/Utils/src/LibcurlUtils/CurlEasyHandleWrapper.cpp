@@ -133,7 +133,7 @@ CurlEasyHandleWrapper::CurlEasyHandleWrapper(std::string id) :
         ACSDK_ERROR(LX("CurlEasyHandleWrapperFailed").d("reason", "curl_easy_init failed"));
     } else {
         if (id.empty()) {
-            m_id = std::to_string(m_idGenerator++);
+            m_id = std::to_string(m_idGenerator);
         } else {
             m_id = std::move(id);
         }
@@ -150,7 +150,7 @@ CurlEasyHandleWrapper::~CurlEasyHandleWrapper() {
 
 bool CurlEasyHandleWrapper::reset(std::string id) {
     if (id.empty()) {
-        m_id = std::to_string(m_idGenerator++);
+        m_id = std::to_string(m_idGenerator);
     } else {
         m_id = std::move(id);
     }
@@ -242,6 +242,9 @@ bool CurlEasyHandleWrapper::setTransferType(TransferType type) {
         case TransferType::kPUT:
             ret = setopt(CURLOPT_UPLOAD, 1L);
             break;
+        case TransferType::kDELETE:
+            ret = setopt(CURLOPT_CUSTOMREQUEST, "DELETE");
+            break;            
     }
     return ret;
 }
@@ -403,23 +406,23 @@ void CurlEasyHandleWrapper::initStreamLog() {
         ACSDK_INFO(LX("initStreamLog").d("sessionId", sessionId));
     }
 
-    auto basePath = streamLogPrefix + STREAM_LOG_NAME_PREFIX + sessionId + "-" + m_id;
+    auto basePath = streamLogPrefix  STREAM_LOG_NAME_PREFIX  sessionId  "-"  m_id;
 
-    auto streamLogPath = basePath + STREAM_LOG_NAME_SUFFIX;
+    auto streamLogPath = basePath  STREAM_LOG_NAME_SUFFIX;
     m_streamLog.reset(new std::ofstream(streamLogPath));
     if (!m_streamLog->good()) {
         m_streamLog.reset();
         ACSDK_ERROR(LX("initStreamLogFailed").d("reason", "fileOpenFailed").d("streamLogPath", streamLogPath));
     }
 
-    auto streamInDumpPath = basePath + STREAM_IN_DUMP_SUFFIX;
+    auto streamInDumpPath = basePath  STREAM_IN_DUMP_SUFFIX;
     m_streamInDump.reset(new std::ofstream(streamInDumpPath, std::ios_base::out | std::ios_base::binary));
     if (!m_streamInDump->good()) {
         m_streamInDump.reset();
         ACSDK_ERROR(LX("initStreamLogFailed").d("reason", "fileOpenFailed").d("streamInDumpPath", streamInDumpPath));
     }
 
-    auto streamOutDumpPath = basePath + STREAM_OUT_DUMP_SUFFIX;
+    auto streamOutDumpPath = basePath  STREAM_OUT_DUMP_SUFFIX;
     m_streamOutDump.reset(new std::ofstream(streamOutDumpPath, std::ios_base::out | std::ios_base::binary));
     if (!m_streamOutDump->good()) {
         m_streamOutDump.reset();

@@ -86,13 +86,13 @@ static const std::string AUDIO_ITEM_ID_TAG{"audioItemId"};
 static const size_t MAXIMUM_QUEUE_SIZE{100};
 
 /// Default timeout for clearing the RenderTemplate display card when SpeechSynthesizer is in FINISHED state.
-static const std::chrono::milliseconds DEFAULT_TTS_FINISHED_TIMEOUT_MS{2000};
+static const std::chrono::milliseconds DEFAULT_TTS_FINISHED_TIMEOUT_MS{8000};
 
 /// Default timeout for clearing the RenderPlayerInfo display card when AudioPlayer is in FINISHED state.
 static const std::chrono::milliseconds DEFAULT_AUDIO_FINISHED_TIMEOUT_MS{2000};
 
 /// Default timeout for clearing the RenderPlayerInfo display card when AudioPlayer is in STOPPED/PAUSED state.
-static const std::chrono::milliseconds DEFAULT_AUDIO_STOPPED_PAUSED_TIMEOUT_MS{60000};
+static const std::chrono::milliseconds DEFAULT_AUDIO_STOPPED_PAUSED_TIMEOUT_MS{1800000};
 
 /**
  * Creates the TemplateRuntime capability configuration.

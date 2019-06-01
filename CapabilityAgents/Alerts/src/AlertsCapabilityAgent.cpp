@@ -59,6 +59,9 @@ static const std::string ALERTS_CAPABILITY_INTERFACE_VERSION = "1.3";
 /// The value for Type which we need for json parsing.
 static const std::string KEY_TYPE = "type";
 
+/// The value for Label which we need for json parsing.
+static const std::string KEY_LABEL = "label";
+
 // ==== Directives ===
 
 /// The value of the SetAlert Directive.
@@ -405,6 +408,27 @@ bool AlertsCapabilityAgent::initialize() {
 
     updateContextManager();
 
+    Document document( rapidjson::kObjectType );;
+    document.AddMember("time", parsedAlert->getScheduledTime_ISO_8601(), document.GetAllocator());
+    document.AddMember("type", parsedAlert->getTypeName(), document.GetAllocator());
+    std::string label;
+    if (!retrieveValue(payload, KEY_LABEL, &label)) {
+        document.AddMember("label", "", document.GetAllocator());
+    } else {
+        document.AddMember("label", label, document.GetAllocator());
+    }
+    // build the json state string
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer( buffer );
+
+    if (!document.Accept( writer )) {
+        ACSDK_ERROR(LX("failedToWriteJsonDocument").m("Alert DetailedInfo not sent"));
+    } else {
+        std::string payload = buffer.GetString();
+        std::string token = parsedAlert->getToken();
+        m_executor.submit([this, token, payload]() { executeOnAlertCreated( token, payload); });
+    }
+
     return true;
 }
 
@@ -464,6 +488,9 @@ bool AlertsCapabilityAgent::handleSetAlert(
 
     updateContextManager();
 
+    std::string token = *alertToken;
+    m_executor.submit([this, token]() { executeOnAlertDeleted(token); });
+
     return true;
 }
 
@@ -507,11 +534,13 @@ bool AlertsCapabilityAgent::handleDeleteAlerts(
     }
 
     auto tokenArray = tokensPayload->value.GetArray();
-    for (rapidjson::SizeType i = 0; i < tokenArray.Size(); i++) {
+    for (rapidjson::SizeType i = 0; i < tokenArray.Size(); i) {
         std::string token;
         if (!convertToValue(tokenArray[i], &token)) {
             ACSDK_WARN(LX("handleDeleteAlertsFailed").d("reason", "invalid token in payload"));
             continue;
+        } else {
+            m_executor.submit([this, token]() { executeOnAlertDeleted(token); });
         }
         alertTokens.push_back(token);
     }
@@ -557,7 +586,7 @@ bool AlertsCapabilityAgent::handleAdjustVolume(
         ACSDK_ERROR(LX("handleAdjustVolumeFailed").m("Could not retrieve speaker volume."));
         return false;
     }
-    int64_t volume = adjustValue + speakerSettings.volume;
+    int64_t volume = adjustValue  speakerSettings.volume;
 
     setNextAlertVolume(volume);
 
@@ -848,6 +877,14 @@ void AlertsCapabilityAgent::executeOnAlertStateChange(
     });
 }
 
+void AlertsCapabilityAgent::executeOnAlertCreated(const std::string& alertToken, const std::string& payload){
+    m_executor.submit([this, alertToken, payload]() { executeNotifyAlertCreatedObservers(alertToken, payload); });
+}
+
+void AlertsCapabilityAgent::executeOnAlertDeleted(const std::string& alertToken){
+    m_executor.submit([this, alertToken]() { executeNotifyAlertDeletedObservers(alertToken); });
+}
+
 void AlertsCapabilityAgent::executeAddObserver(std::shared_ptr<AlertObserverInterface> observer) {
     ACSDK_DEBUG1(LX("executeAddObserver").d("observer", observer.get()));
     m_observers.insert(observer);
@@ -870,6 +907,23 @@ void AlertsCapabilityAgent::executeNotifyObservers(
                      .d("reason", reason));
     for (auto observer : m_observers) {
         observer->onAlertStateChange(alertToken, alertType, state, reason);
+    }
+}
+
+void AlertsCapabilityAgent::executeNotifyAlertCreatedObservers(
+    const std::string& alertToken,
+    const std::string& payload) {
+        ACSDK_DEBUG1(LX("executeNotifyAlertCreatedObservers").d("alertToken", alertToken).sensitive("payload", payload));
+    for (auto observer : m_observers) {
+        observer->onAlertCreated(alertToken, payload);
+    }
+}
+
+void AlertsCapabilityAgent::executeNotifyAlertDeletedObservers(
+    const std::string& alertToken) {
+        ACSDK_DEBUG1(LX("executeNotifyAlertDeletedObservers").d("alertToken", alertToken));
+    for (auto observer : m_observers) {
+        observer->onAlertDeleted(alertToken);
     }
 }
 

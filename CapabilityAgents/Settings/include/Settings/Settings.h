@@ -101,6 +101,15 @@ public:
     std::future<bool> changeSetting(const std::string& key, const std::string& value);
 
     /**
+     * Function called by the application to get a Settings value.
+     *
+     * @param key The name of the setting which is queried.
+     * @param value The value of the setting.
+     * @return @c true if key is found else @c false.
+     */
+    bool getSetting(const std::string& key, std::string& value);
+
+    /**
      * Function which sends the default settings to AVS if the settings do not already exist in the database.
      * If the settings already exist, the event is not sent.
      */

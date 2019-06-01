@@ -45,12 +45,17 @@ const std::vector<int> SESSION_RETRY_TABLE = {
 
 avsCommon::utils::RetryTimer SESSION_RETRY_TIMER(SESSION_RETRY_TABLE);
 
-const NamespaceAndName CHANGE_REPORT("Alexa", "ChangeReport");
+const NamespaceAndName CHANGE_REPORT("Alexa", "ChangeReport"); // Note: not in ExternalMediaPlayer 1.1
 const NamespaceAndName REQUEST_TOKEN("ExternalMediaPlayer", "RequestToken");
 const NamespaceAndName LOGIN("ExternalMediaPlayer", "Login");
 const NamespaceAndName LOGOUT("ExternalMediaPlayer", "Logout");
 const NamespaceAndName PLAYER_EVENT("ExternalMediaPlayer", "PlayerEvent");
-const NamespaceAndName PLAYER_ERROR_EVENT("ExternalMediaPlayer", "PlayerError");
+const NamespaceAndName PLAYER_ERROR_EVENT("ExternalMediaPlayer", "PlayerError"); // Note: rename PLAYER_ERROR in ExternalMediaPlayer 1.1
+#ifdef EXTERNALMEDIAPLAYER_1_1
+const NamespaceAndName PLAYER_ERROR("ExternalMediaPlayer", "PlayerError"); // Note: rename PLAYER_ERROR in ExternalMediaPlayer 1.1
+const NamespaceAndName REPORT_DISCOVERED_PLAYERS("ExternalMediaPlayer", "ReportDiscoveredPlayers");
+const NamespaceAndName AUTHORIZATION_COMPLETE("ExternalMediaPlayer", "AuthorizationComplete");
+#endif
 
 /// The default state of a player.
 const char DEFAULT_STATE[] = "IDLE";
@@ -128,6 +133,12 @@ rapidjson::Value buildSessionState(
     playerJson.AddMember(IS_GUEST, sessionState.isGuest, allocator);
     playerJson.AddMember(LAUNCHED, sessionState.launched, allocator);
     playerJson.AddMember(ACTIVE, sessionState.active, allocator);
+#ifdef EXTERNALMEDIAPLAYER_1_1
+    playerJson.AddMember(SPI_VERSION, sessionState.spiVersion, allocator);
+    playerJson.AddMember(PLAYER_COOKIE, sessionState.playerCookie, allocator);
+    playerJson.AddMember(SKILL_TOKEN, sessionState.skillToken, allocator);
+    playerJson.AddMember(PLAYBACK_SESSION_ID, sessionState.playbackSessionId, allocator);
+#endif
 
     return playerJson;
 }

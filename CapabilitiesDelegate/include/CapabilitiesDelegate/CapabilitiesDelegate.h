@@ -101,6 +101,12 @@ public:
     void clearData() override;
     /// @}
 
+    // publish capabilities again in case of new client login to same device
+    void setCapabilitiesPublishOverride( bool overriden );
+
+    // set capabilities api endpoint
+    void setCapabilitiesApiEndpoint( std::string& endpoint );
+
 private:
     /**
      * CapabilitiesDelegate constructor.
@@ -299,6 +305,9 @@ private:
 
     /// To indicate if CapabilitiesDelegate is being shutdown
     bool m_isCapabilitiesDelegateShutdown;
+
+    /// To indicate if CapabilitiesDelegate should publish anyway ( in case of same capabilities with new user account )
+    bool m_capabilitiesDelegatePublishOverride;
 
     /// Used to let CapabilitiesDelegate know that it no longer needs to wait to publish.
     std::condition_variable m_publishWaitDone;

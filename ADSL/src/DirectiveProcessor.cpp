@@ -47,7 +47,8 @@ std::unordered_map<DirectiveProcessor::ProcessorHandle, DirectiveProcessor*> Dir
 DirectiveProcessor::DirectiveProcessor(DirectiveRouter* directiveRouter) :
         m_directiveRouter{directiveRouter},
         m_isShuttingDown{false},
-        m_isEnabled{true} {
+        m_isEnabled{true},
+        m_isDialogRequestOnline{true} {
     std::lock_guard<std::mutex> lock(m_handleMapMutex);
     m_handle = ++m_nextProcessorHandle;
     m_handleMap[m_handle] = this;
@@ -62,6 +63,22 @@ void DirectiveProcessor::setDialogRequestId(const std::string& dialogRequestId) 
     std::lock_guard<std::mutex> lock(m_mutex);
     setDialogRequestIdLocked(dialogRequestId);
 }
+
+std::string DirectiveProcessor::getCurrentDialogRequestId() {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return getCurrentDialogRequestIdLocked();
+}
+
+void DirectiveProcessor::setIsCurrentDialogRequestOnline(bool isOnline) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    setIsCurrentDialogRequestOnlineLocked(isOnline);
+}
+
+bool DirectiveProcessor::isCurrentDialogRequestOnline() {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return isCurrentDialogRequestOnlineLocked();
+}
+
 
 bool DirectiveProcessor::onDirective(std::shared_ptr<AVSDirective> directive) {
     if (!directive) {
@@ -127,6 +144,18 @@ bool DirectiveProcessor::onDirective(std::shared_ptr<AVSDirective> directive) {
     m_wakeProcessingLoop.notify_one();
 
     return true;
+}
+
+std::string DirectiveProcessor::getCurrentDialogRequestIdLocked() {
+    return m_dialogRequestId;
+}
+
+void DirectiveProcessor::setIsCurrentDialogRequestOnlineLocked(bool isOnline) {
+    m_isDialogRequestOnline = isOnline;
+}
+
+bool DirectiveProcessor::isCurrentDialogRequestOnlineLocked() {
+    return m_isDialogRequestOnline;
 }
 
 void DirectiveProcessor::shutdown() {

@@ -73,7 +73,9 @@ public:
         /// HTTP POST
         kPOST,
         /// HTTP PUT
-        kPUT
+        kPUT,
+        /// HTTP DELETE
+        kDELETE
     };
 
     /**
