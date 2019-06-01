@@ -169,7 +169,7 @@ static const char PLAYER_IN_FOCUS[] = "playerInFocus";
 /// The max relative time in the past that we can  seek to in milliseconds(-12hours in ms).
 static const int64_t MAX_PAST_OFFSET = -86400000;
 
-/// The max relative time in the past that we can  seek to in milliseconds(12 hours in ms).
+/// The max relative time in the past that we can  seek to in milliseconds(+12 hours in ms).
 static const int64_t MAX_FUTURE_OFFSET = 86400000;
 
 /**

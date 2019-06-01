@@ -409,16 +409,16 @@ static std::string createPlayPayloadWithParseError(
     // clang-format off
     const std::string PLAY_PAYLOAD_TEST =
         "{"
-            "\"playbackContextToken\":\""  playContext  "\","
-            "\"offsetInMilliseconds\":"  std::to_string(offsetInMilliseconds)  "\","
-            "\"playerId\":\""  playerId  "\","
-            "\"index\":\""  std::to_string(index)  "\","
+            "\"playbackContextToken\":\"" + playContext + "\","
+            "\"offsetInMilliseconds\":" + std::to_string(offsetInMilliseconds) + "\","
+            "\"playerId\":\"" + playerId + "\","
+            "\"index\":\"" + std::to_string(index) + "\","
 #ifdef EXTERNALMEDIAPLAYER_1_1
 //             ","
-            "\"skillToken\":\""  skillToken  "\","
-            "\"playbackSessionId\":\""  playbackSessionId  "\","
-            "\"navigation\":\""  navigation  "\"," // DEFAULT, NONE, FOREGROUND
-            "\"preload\":"  (preload ? "true" : "false")  ""
+            "\"skillToken\":\"" + skillToken + "\","
+            "\"playbackSessionId\":\"" + playbackSessionId + "\","
+            "\"navigation\":\"" + navigation + "\"," // DEFAULT, NONE, FOREGROUND
+            "\"preload\":" + (preload ? "true" : "false") + ""
 #endif
         "}";
     // clang-format on
@@ -436,7 +436,7 @@ static std::string createPayloadWithPlayerId(const std::string& playerId) {
     // clang-format off
     const std::string PLAYERID_PAYLOAD_TEST =
         "{"
-            "\"playerId\":\""  playerId  "\""
+            "\"playerId\":\"" + playerId + "\""
         "}";
     // clang-format on
 
@@ -468,16 +468,16 @@ static std::string createPlayPayload(
     // clang-format off
     const std::string PLAY_PAYLOAD_TEST =
         "{"
-            "\"playbackContextToken\":\""  playContext  "\","
-            "\"offsetInMilliseconds\":\""  std::to_string(offsetInMilliseconds)  "\","
-            "\"playerId\":\""  playerId  "\","
-            "\"index\":\""  std::to_string(index)  "\""
+            "\"playbackContextToken\":\"" + playContext + "\","
+            "\"offsetInMilliseconds\":\"" + std::to_string(offsetInMilliseconds) + "\","
+            "\"playerId\":\"" + playerId + "\","
+            "\"index\":\"" + std::to_string(index) + "\""
 #ifdef EXTERNALMEDIAPLAYER_1_1
             ","
-            "\"skillToken\":\""  skillToken  "\","
-            "\"playbackSessionId\":\""  playbackSessionId  "\","
-            "\"navigation\":\""  navigation  "\"," // DEFAULT, NONE, FOREGROUND
-            "\"preload\":"  (preload ? "true" : "false")  ""
+            "\"skillToken\":\"" + skillToken + "\","
+            "\"playbackSessionId\":\"" + playbackSessionId + "\","
+            "\"navigation\":\"" + navigation + "\"," // DEFAULT, NONE, FOREGROUND
+            "\"preload\":" + (preload ? "true" : "false") + ""
 #endif
         "}";
     // clang-format on
@@ -505,15 +505,15 @@ static std::string createPlayPayloadNoContext(int index, int64_t offsetInMillise
     // clang-format off
     const std::string PLAY_PAYLOAD_TEST =
         "{"
-            "\"offsetInMilliseconds\":\""  std::to_string(offsetInMilliseconds)  "\","
-            "\"playerId\":\""  playerId  "\","
-            "\"index\":\""  std::to_string(index)  "\""
+            "\"offsetInMilliseconds\":\"" + std::to_string(offsetInMilliseconds) + "\","
+            "\"playerId\":\"" + playerId + "\","
+            "\"index\":\"" + std::to_string(index) + "\""
 #ifdef EXTERNALMEDIAPLAYER_1_1
             ","
-            "\"skillToken\":\""  skillToken  "\","
-            "\"playbackSessionId\":\""  playbackSessionId  "\","
-            "\"navigation\":\""  navigation  "\"," // DEFAULT, NONE, FOREGROUND
-            "\"preload\":"  (preload ? "true" : "false")  ""
+            "\"skillToken\":\"" + skillToken + "\","
+            "\"playbackSessionId\":\"" + playbackSessionId + "\","
+            "\"navigation\":\"" + navigation + "\"," // DEFAULT, NONE, FOREGROUND
+            "\"preload\":" + (preload ? "true" : "false") + ""
 #endif
         "}";
     // clang-format on
@@ -544,15 +544,15 @@ static std::string createPlayPayloadNoPlayerId(
     // clang-format off
     const std::string PLAY_PAYLOAD_TEST =
         "{"
-            "\"playbackContextToken\":\""  playContext  "\","
-            "\"offsetInMilliseconds\":\""  std::to_string(offsetInMilliseconds)  "\","
-            "\"index\":\""  std::to_string(index)  "\""
+            "\"playbackContextToken\":\"" + playContext + "\","
+            "\"offsetInMilliseconds\":\"" + std::to_string(offsetInMilliseconds) + "\","
+            "\"index\":\"" + std::to_string(index) + "\""
 #ifdef EXTERNALMEDIAPLAYER_1_1
             ","
-            "\"skillToken\":\""  skillToken  "\","
-            "\"playbackSessionId\":\""  playbackSessionId  "\","
-            "\"navigation\":\""  navigation  "\"," // DEFAULT, NONE, FOREGROUND
-            "\"preload\":"  (preload ? "true" : "false")  ""
+            "\"skillToken\":\"" + skillToken + "\","
+            "\"playbackSessionId\":\"" + playbackSessionId + "\","
+            "\"navigation\":\"" + navigation + "\"," // DEFAULT, NONE, FOREGROUND
+            "\"preload\":" + (preload ? "true" : "false") + ""
 #endif
         "}";
 
@@ -584,15 +584,15 @@ static std::string createPlayPayloadNoIndex(
     // clang-format off
     const std::string PLAY_PAYLOAD_TEST =
         "{"
-            "\"playbackContextToken\":\""  playContext  "\","
-            "\"offsetInMilliseconds\":"  std::to_string(offsetInMilliseconds)  ","
-            "\"playerId\":\""  playerId  "\""
+            "\"playbackContextToken\":\"" + playContext + "\","
+            "\"offsetInMilliseconds\":" + std::to_string(offsetInMilliseconds) + ","
+            "\"playerId\":\"" + playerId + "\""
 #ifdef EXTERNALMEDIAPLAYER_1_1
             ","
-            "\"skillToken\":\""  skillToken  "\","
-            "\"playbackSessionId\":\""  playbackSessionId  "\","
-            "\"navigation\":\""  navigation  "\"," // DEFAULT, NONE, FOREGROUND
-            "\"preload\":"  (preload ? "true" : "false")  ""
+            "\"skillToken\":\"" + skillToken + "\","
+            "\"playbackSessionId\":\"" + playbackSessionId + "\","
+            "\"navigation\":\"" + navigation + "\"," // DEFAULT, NONE, FOREGROUND
+            "\"preload\":" + (preload ? "true" : "false") + ""
 #endif
         "}";
 
@@ -621,15 +621,15 @@ static std::string createPlayPayloadNoOffset(const std::string& playContext, int
     // clang-format off
     const std::string PLAY_PAYLOAD_TEST =
         "{"
-            "\"playbackContextToken\":\""  playContext  "\","
-            "\"playerId\":\""  playerId  "\","
-            "\"index\":\""  std::to_string(index)  "\""
+            "\"playbackContextToken\":\"" + playContext + "\","
+            "\"playerId\":\"" + playerId + "\","
+            "\"index\":\"" + std::to_string(index) + "\""
 #ifdef EXTERNALMEDIAPLAYER_1_1
             ","
-            "\"skillToken\":\""  skillToken  "\","
-            "\"playbackSessionId\":\""  playbackSessionId  "\","
-            "\"navigation\":\""  navigation  "\"," // DEFAULT, NONE, FOREGROUND
-            "\"preload\":"  (preload ? "true" : "false")  ""
+            "\"skillToken\":\"" + skillToken + "\","
+            "\"playbackSessionId\":\"" + playbackSessionId + "\","
+            "\"navigation\":\"" + navigation + "\"," // DEFAULT, NONE, FOREGROUND
+            "\"preload\":" + (preload ? "true" : "false") + ""
 #endif
         "}";
 
@@ -657,11 +657,11 @@ static std::string createLoginPayload(
     // clang-format off
     const std::string LOGIN_PAYLOAD_TEST =
         "{"
-            "\"playerId\":\""  playerId  "\","
-            "\"accessToken\":\""  accessToken  "\","
-            "\"tokenRefreshIntervalInMilliseconds\":"  std::to_string(refreshInterval)  ","
-            "\"forceLogin\": true"  ","
-            "\"username\":\""  userName  "\""
+            "\"playerId\":\"" + playerId + "\","
+            "\"accessToken\":\"" + accessToken + "\","
+            "\"tokenRefreshIntervalInMilliseconds\":" + std::to_string(refreshInterval) + ","
+            "\"forceLogin\": true" + ","
+            "\"username\":\"" + userName + "\""
         "}";
 
     // clang-format on
@@ -682,12 +682,12 @@ static std::string createSeekPayload(int64_t timeOffset, const std::string& play
     std::string SEEK_PAYLOAD_TEST;
     // clang-format off
     if (adjustSeek) {
-        SEEK_PAYLOAD_TEST = "{\"playerId\":\""  playerId  "\",\"deltaPositionMilliseconds\":" 
-                             std::to_string(timeOffset)  "}";
+        SEEK_PAYLOAD_TEST = "{\"playerId\":\"" + playerId + "\",\"deltaPositionMilliseconds\":" +
+                             std::to_string(timeOffset) + "}";
     }
     else {
-        SEEK_PAYLOAD_TEST = "{\"playerId\":\""  playerId  "\",\"positionMilliseconds\":" 
-                             std::to_string(timeOffset)  "}";
+        SEEK_PAYLOAD_TEST = "{\"playerId\":\"" + playerId + "\",\"positionMilliseconds\":" +
+                             std::to_string(timeOffset) + "}";
     }
     // clang-format on
 

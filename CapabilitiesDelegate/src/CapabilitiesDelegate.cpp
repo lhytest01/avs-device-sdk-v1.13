@@ -240,7 +240,7 @@ std::string getCapabilityKey(const std::unordered_map<std::string, std::string>&
     }
     auto interfaceName = interfaceNameIterator->second;
 
-    return interfaceType  CAPABILITY_KEY_SEPARATOR  interfaceName;
+    return interfaceType + CAPABILITY_KEY_SEPARATOR + interfaceName;
 }
 
 bool capabilityMapFormCheckHelper(
@@ -412,21 +412,21 @@ void CapabilitiesDelegate::clearData() {
             if (!m_miscStorage->clearTable(COMPONENT_NAME, CAPABILITIES_PUBLISH_TABLE)) {
                 ACSDK_ERROR(LX("clearDataFailed")
                                 .d("reason",
-                                   "Unable to clear the table "  CAPABILITIES_PUBLISH_TABLE  " for component " 
-                                       COMPONENT_NAME  ". Please clear the table for proper future functioning."));
+                                   "Unable to clear the table " + CAPABILITIES_PUBLISH_TABLE + " for component " +
+                                       COMPONENT_NAME + ". Please clear the table for proper future functioning."));
                 if (!m_miscStorage->deleteTable(COMPONENT_NAME, CAPABILITIES_PUBLISH_TABLE)) {
                 ACSDK_ERROR(LX("clearDataFailed")
                                 .d("reason",
-                                   "Unable to delete the table "  CAPABILITIES_PUBLISH_TABLE  " for component " 
-                                       COMPONENT_NAME  ". Please delete the table for proper future functioning."));
+                                   "Unable to delete the table " + CAPABILITIES_PUBLISH_TABLE + " for component " +
+                                       COMPONENT_NAME + ". Please delete the table for proper future functioning."));
                 }                                       
             }
         }
     } else {
         ACSDK_ERROR(LX("clearDataFailed")
                         .d("reason",
-                           "Unable to check if the table "  CAPABILITIES_PUBLISH_TABLE  " for component " 
-                               COMPONENT_NAME  "exists. Please delete the table for proper future functioning."));
+                           "Unable to check if the table " + CAPABILITIES_PUBLISH_TABLE + " for component " +
+                               COMPONENT_NAME + "exists. Please delete the table for proper future functioning."));
     }
 }
 
@@ -471,16 +471,16 @@ bool CapabilitiesDelegate::init(const ConfigurationNode& configurationRoot) {
 
     if (!capabilitiesTableExists) {
         ACSDK_DEBUG0(LX(infoEvent).m(
-            "Table for Capabilities doesn't exist in misc database. Creating table "  CAPABILITIES_PUBLISH_TABLE 
-            " for component "  COMPONENT_NAME  "."));
+            "Table for Capabilities doesn't exist in misc database. Creating table " + CAPABILITIES_PUBLISH_TABLE +
+            " for component " + COMPONENT_NAME + "."));
         if (!m_miscStorage->createTable(
                 COMPONENT_NAME,
                 CAPABILITIES_PUBLISH_TABLE,
                 MiscStorageInterface::KeyType::STRING_KEY,
                 MiscStorageInterface::ValueType::STRING_VALUE)) {
             ACSDK_ERROR(LX(errorEvent)
-                            .m("Could not create misc table "  CAPABILITIES_PUBLISH_TABLE  " for component " 
-                               COMPONENT_NAME  "."));
+                            .m("Could not create misc table " + CAPABILITIES_PUBLISH_TABLE + " for component " +
+                               COMPONENT_NAME + "."));
             return false;
         }
     }
@@ -567,11 +567,11 @@ CapabilitiesDelegate::CapabilitiesPublishReturnCode CapabilitiesDelegate::publis
     const std::string capabilitiesApiUrl = getCapabilitiesApiUrl(SELF_DEVICE);
 
     const std::vector<std::string> httpHeaderData = {
-        CONTENT_TYPE_HEADER_KEY  HEADER_KEY_VALUE_SEPARATOR  CONTENT_TYPE_HEADER_VALUE,
-        CONTENT_LENGTH_HEADER_KEY  HEADER_KEY_VALUE_SEPARATOR  std::to_string(m_capabilitiesPublishMessage.size()),
-        AUTHORIZATION_HEADER_KEY  HEADER_KEY_VALUE_SEPARATOR  authToken,
-        ACCEPT_HEADER_KEY  HEADER_KEY_VALUE_SEPARATOR,
-        EXPECT_HEADER_KEY  HEADER_KEY_VALUE_SEPARATOR};
+        CONTENT_TYPE_HEADER_KEY + HEADER_KEY_VALUE_SEPARATOR + CONTENT_TYPE_HEADER_VALUE,
+        CONTENT_LENGTH_HEADER_KEY + HEADER_KEY_VALUE_SEPARATOR + std::to_string(m_capabilitiesPublishMessage.size()),
+        AUTHORIZATION_HEADER_KEY + HEADER_KEY_VALUE_SEPARATOR + authToken,
+        ACCEPT_HEADER_KEY + HEADER_KEY_VALUE_SEPARATOR,
+        EXPECT_HEADER_KEY + HEADER_KEY_VALUE_SEPARATOR};
 
     HTTPResponse httpResponse = m_httpPut->doPut(capabilitiesApiUrl, httpHeaderData, m_capabilitiesPublishMessage);
 
@@ -589,7 +589,7 @@ CapabilitiesDelegate::CapabilitiesPublishReturnCode CapabilitiesDelegate::publis
             return CapabilitiesDelegate::CapabilitiesPublishReturnCode::SUCCESS;
         case HTTPResponseCode::CLIENT_ERROR_BAD_REQUEST:
             ACSDK_ERROR(
-                LX(errorEvent).d(errorReasonKey, "badRequest: "  getErrorMsgFromHttpResponse(httpResponse.body)));
+                LX(errorEvent).d(errorReasonKey, "badRequest: " + getErrorMsgFromHttpResponse(httpResponse.body)));
             setCapabilitiesState(
                 CapabilitiesObserverInterface::State::FATAL_ERROR, CapabilitiesObserverInterface::Error::BAD_REQUEST);
             return CapabilitiesDelegate::CapabilitiesPublishReturnCode::FATAL_ERROR;
@@ -608,7 +608,7 @@ CapabilitiesDelegate::CapabilitiesPublishReturnCode CapabilitiesDelegate::publis
         default:
             ACSDK_ERROR(LX(errorEvent)
                             .d("responseCode", httpResponse.code)
-                            .d(errorReasonKey, "httpRequestFailed "  httpResponse.serialize()));
+                            .d(errorReasonKey, "httpRequestFailed " + httpResponse.serialize()));
             setCapabilitiesState(
                 CapabilitiesObserverInterface::State::RETRIABLE_ERROR,
                 CapabilitiesObserverInterface::Error::UNKNOWN_ERROR);
@@ -625,7 +625,7 @@ void CapabilitiesDelegate::publishCapabilitiesAsyncWithRetries() {
         while (CapabilitiesDelegateInterface::CapabilitiesPublishReturnCode::RETRIABLE_ERROR ==
                capabilitiesPublishReturnCode) {
             std::chrono::milliseconds retryBackoff =
-                acl::TransportDefines::RETRY_TIMER.calculateTimeToRetry(retryCount);
+                acl::TransportDefines::RETRY_TIMER.calculateTimeToRetry(retryCount++);
             ACSDK_ERROR(LX("capabilitiesPublishFailed").d("reason", "serverError").d("retryCount", retryCount));
 
             {
@@ -730,12 +730,12 @@ std::string getCapabilityInfoStringFromJson(const rapidjson::Value& capabilityJs
     const std::string reasonKey = "reason";
 
     if (!capabilityJson.HasMember(jsonMemberKey)) {
-        ACSDK_ERROR(LX(event).d(reasonKey, "jsonMemberNotAvailable: "  jsonMemberKey));
+        ACSDK_ERROR(LX(event).d(reasonKey, "jsonMemberNotAvailable: " + jsonMemberKey));
         return "";
     }
     const rapidjson::Value& capabilityTypeJson = (capabilityJson.FindMember(jsonMemberKey))->value;
     if (!capabilityTypeJson.IsString()) {
-        ACSDK_ERROR(LX(event).d(reasonKey, "jsonMemberNotString: "  jsonMemberKey));
+        ACSDK_ERROR(LX(event).d(reasonKey, "jsonMemberNotString: " + jsonMemberKey));
         return "";
     }
     return capabilityTypeJson.GetString();
@@ -849,7 +849,7 @@ std::string CapabilitiesDelegate::getCapabilitiesPublishMessageBodyFromOverride(
         ACSDK_ERROR(LX(errorEvent).d(errorReasonKey, "Capabilities list is not an array"));
         return "";
     }
-    for (rapidjson::SizeType capabilityIndx = 0; capabilityIndx < capabiltiesJson.Size(); capabilityIndx) {
+    for (rapidjson::SizeType capabilityIndx = 0; capabilityIndx < capabiltiesJson.Size(); capabilityIndx++) {
         const rapidjson::Value& capabilityJson = capabiltiesJson[capabilityIndx];
         std::unordered_map<std::string, std::string> capabilityMap;
 
@@ -916,7 +916,7 @@ std::string CapabilitiesDelegate::getCapabilitiesPublishMessageBody() {
 }
 
 std::string CapabilitiesDelegate::getCapabilitiesApiUrl(const std::string& deviceId) {
-    return m_capabilitiesApiEndpoint  CAPABILITIES_API_URL_PRE_DEVICE_SUFFIX  deviceId 
+    return m_capabilitiesApiEndpoint + CAPABILITIES_API_URL_PRE_DEVICE_SUFFIX + deviceId +
            CAPABILITIES_API_URL_POST_DEVICE_SUFFIX;
 }
 
@@ -994,16 +994,16 @@ std::string CapabilitiesDelegate::getAuthToken() {
 }
 
 void CapabilitiesDelegate::getPreviouslySentCapabilitiesPublishData() {
-    const std::string dbKeysPrefix = DB_KEY_ENDPOINT  m_capabilitiesApiEndpoint  DB_KEY_SEPARATOR;
+    const std::string dbKeysPrefix = DB_KEY_ENDPOINT + m_capabilitiesApiEndpoint + DB_KEY_SEPARATOR;
 
     std::string previousClientId;
     std::string previousProductId;
     std::string previousDeviceSerialNumber;
-    m_miscStorage->get(COMPONENT_NAME, CAPABILITIES_PUBLISH_TABLE, dbKeysPrefix  DB_KEY_CLIENT_ID, &previousClientId);
+    m_miscStorage->get(COMPONENT_NAME, CAPABILITIES_PUBLISH_TABLE, dbKeysPrefix + DB_KEY_CLIENT_ID, &previousClientId);
     m_miscStorage->get(
-        COMPONENT_NAME, CAPABILITIES_PUBLISH_TABLE, dbKeysPrefix  DB_KEY_PRODUCT_ID, &previousProductId);
+        COMPONENT_NAME, CAPABILITIES_PUBLISH_TABLE, dbKeysPrefix + DB_KEY_PRODUCT_ID, &previousProductId);
     m_miscStorage->get(
-        COMPONENT_NAME, CAPABILITIES_PUBLISH_TABLE, dbKeysPrefix  DB_KEY_DSN, &previousDeviceSerialNumber);
+        COMPONENT_NAME, CAPABILITIES_PUBLISH_TABLE, dbKeysPrefix + DB_KEY_DSN, &previousDeviceSerialNumber);
 
     if (!previousClientId.empty() && !previousProductId.empty() && !previousDeviceSerialNumber.empty()) {
         m_previousDeviceInfo = DeviceInfo::create(previousClientId, previousProductId, previousDeviceSerialNumber);
@@ -1013,13 +1013,13 @@ void CapabilitiesDelegate::getPreviouslySentCapabilitiesPublishData() {
 
     m_previousEnvelopeVersion = "";
     m_miscStorage->get(
-        COMPONENT_NAME, CAPABILITIES_PUBLISH_TABLE, dbKeysPrefix  DB_KEY_ENVELOPE_VERSION, &m_previousEnvelopeVersion);
+        COMPONENT_NAME, CAPABILITIES_PUBLISH_TABLE, dbKeysPrefix + DB_KEY_ENVELOPE_VERSION, &m_previousEnvelopeVersion);
 
     std::string previousCapabilitiesPublishMsgStr;
     m_miscStorage->get(
         COMPONENT_NAME,
         CAPABILITIES_PUBLISH_TABLE,
-        dbKeysPrefix  DB_KEY_PUBLISH_MSG,
+        dbKeysPrefix + DB_KEY_PUBLISH_MSG,
         &previousCapabilitiesPublishMsgStr);
     if (!previousCapabilitiesPublishMsgStr.empty()) {
         rapidjson::Document previousCapabilitiesPublishMsgJson;
@@ -1027,7 +1027,7 @@ void CapabilitiesDelegate::getPreviouslySentCapabilitiesPublishData() {
 
         for (rapidjson::SizeType capabilityIndx = 0;
              capabilityIndx < previousCapabilitiesPublishMsgJson[CAPABILITIES_KEY].Size();
-             capabilityIndx) {
+             capabilityIndx++) {
             const rapidjson::Value& capabilityJson =
                 previousCapabilitiesPublishMsgJson[CAPABILITIES_KEY][capabilityIndx];
             std::unordered_map<std::string, std::string> capabilityMap;
@@ -1106,25 +1106,25 @@ void logFailedSaveAndClearCapabilitiesPublishTable(const std::shared_ptr<MiscSto
     ACSDK_ERROR(
         LX("saveCapabilitiesPublishDataFailed")
             .d("reason",
-               "Unable to update the table "  CAPABILITIES_PUBLISH_TABLE  " for component "  COMPONENT_NAME  "."));
+               "Unable to update the table " + CAPABILITIES_PUBLISH_TABLE + " for component " + COMPONENT_NAME  "."));
     ACSDK_INFO(LX("saveCapabilitiesPublishDataInfo")
-                   .m("Clearing table "  CAPABILITIES_PUBLISH_TABLE  " for component "  COMPONENT_NAME  "."));
+                   .m("Clearing table " + CAPABILITIES_PUBLISH_TABLE + " for component " + COMPONENT_NAME  "."));
     if (!miscStorage->clearTable(COMPONENT_NAME, CAPABILITIES_PUBLISH_TABLE)) {
         ACSDK_ERROR(LX("saveCapabilitiesPublishDataFailed")
                         .d("reason",
-                           "Unable to clear the table "  CAPABILITIES_PUBLISH_TABLE  " for component " 
-                               COMPONENT_NAME  ". Please clear the table for proper future functioning."));
+                           "Unable to clear the table " + CAPABILITIES_PUBLISH_TABLE + " for component " +
+                               COMPONENT_NAME + ". Please clear the table for proper future functioning."));
     }
 }
 
 bool CapabilitiesDelegate::saveCapabilitiesPublishData() {
-    const std::string dbKeysPrefix = DB_KEY_ENDPOINT  m_capabilitiesApiEndpoint  DB_KEY_SEPARATOR;
+    const std::string dbKeysPrefix = DB_KEY_ENDPOINT + m_capabilitiesApiEndpoint  DB_KEY_SEPARATOR;
 
     if ((!m_previousDeviceInfo) || (m_previousDeviceInfo->getClientId() != m_deviceInfo->getClientId())) {
         if (!m_miscStorage->put(
                 COMPONENT_NAME,
                 CAPABILITIES_PUBLISH_TABLE,
-                dbKeysPrefix  DB_KEY_CLIENT_ID,
+                dbKeysPrefix + DB_KEY_CLIENT_ID,
                 m_deviceInfo->getClientId())) {
             logFailedSaveAndClearCapabilitiesPublishTable(m_miscStorage);
             return false;
@@ -1135,7 +1135,7 @@ bool CapabilitiesDelegate::saveCapabilitiesPublishData() {
         if (!m_miscStorage->put(
                 COMPONENT_NAME,
                 CAPABILITIES_PUBLISH_TABLE,
-                dbKeysPrefix  DB_KEY_PRODUCT_ID,
+                dbKeysPrefix + DB_KEY_PRODUCT_ID,
                 m_deviceInfo->getProductId())) {
             logFailedSaveAndClearCapabilitiesPublishTable(m_miscStorage);
             return false;
@@ -1147,7 +1147,7 @@ bool CapabilitiesDelegate::saveCapabilitiesPublishData() {
         if (!m_miscStorage->put(
                 COMPONENT_NAME,
                 CAPABILITIES_PUBLISH_TABLE,
-                dbKeysPrefix  DB_KEY_DSN,
+                dbKeysPrefix + DB_KEY_DSN,
                 m_deviceInfo->getDeviceSerialNumber())) {
             logFailedSaveAndClearCapabilitiesPublishTable(m_miscStorage);
             return false;
@@ -1158,7 +1158,7 @@ bool CapabilitiesDelegate::saveCapabilitiesPublishData() {
         if (!m_miscStorage->put(
                 COMPONENT_NAME,
                 CAPABILITIES_PUBLISH_TABLE,
-                dbKeysPrefix  DB_KEY_ENVELOPE_VERSION,
+                dbKeysPrefix + DB_KEY_ENVELOPE_VERSION,
                 m_envelopeVersion)) {
             logFailedSaveAndClearCapabilitiesPublishTable(m_miscStorage);
             return false;
@@ -1169,7 +1169,7 @@ bool CapabilitiesDelegate::saveCapabilitiesPublishData() {
         if (!m_miscStorage->put(
                 COMPONENT_NAME,
                 CAPABILITIES_PUBLISH_TABLE,
-                dbKeysPrefix  DB_KEY_PUBLISH_MSG,
+                dbKeysPrefix + DB_KEY_PUBLISH_MSG,
                 m_capabilitiesPublishMessage)) {
             logFailedSaveAndClearCapabilitiesPublishTable(m_miscStorage);
             return false;
@@ -1192,8 +1192,8 @@ void CapabilitiesDelegate::invalidateCapabilities() {
     if (!m_miscStorage->clearTable(COMPONENT_NAME, CAPABILITIES_PUBLISH_TABLE)) {
         ACSDK_ERROR(LX("invalidateCapabilities")
                         .d("reason",
-                           "Unable to clear the table "  CAPABILITIES_PUBLISH_TABLE  " for component " 
-                               COMPONENT_NAME  ". Please clear the table for proper future functioning."));
+                           "Unable to clear the table " + CAPABILITIES_PUBLISH_TABLE + " for component " +
+                               COMPONENT_NAME + ". Please clear the table for proper future functioning."));
     }
 }
 

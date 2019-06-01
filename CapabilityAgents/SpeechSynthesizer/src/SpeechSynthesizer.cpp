@@ -425,7 +425,7 @@ void SpeechSynthesizer::executeHandleImmediately(std::shared_ptr<DirectiveInfo> 
 
 void SpeechSynthesizer::executePreHandleAfterValidation(std::shared_ptr<SpeakDirectiveInfo> speakInfo) {
     if (speakInfo->directive->getName() != SPEAK.name) {
-        const std::string message("unexpectedDirective "  speakInfo->directive->getName());
+        const std::string message("unexpectedDirective " + speakInfo->directive->getName());
         ACSDK_ERROR(LX("executePreHandleFailed")
                         .d("reason", "unexpectedDirective")
                         .d("directiveName", speakInfo->directive->getName()));
@@ -436,7 +436,7 @@ void SpeechSynthesizer::executePreHandleAfterValidation(std::shared_ptr<SpeakDir
 
     Document payload;
     if (payload.Parse(speakInfo->directive->getPayload()).HasParseError()) {
-        const std::string message("unableToParsePayload"  speakInfo->directive->getMessageId());
+        const std::string message("unableToParsePayload" + speakInfo->directive->getMessageId());
         ACSDK_ERROR(
             LX("executePreHandleFailed").d("reason", message).d("messageId", speakInfo->directive->getMessageId()));
         sendExceptionEncounteredAndReportFailed(
@@ -458,7 +458,7 @@ void SpeechSynthesizer::executePreHandleAfterValidation(std::shared_ptr<SpeakDir
     }
     std::string format = it->value.GetString();
     if (format != FORMAT) {
-        const std::string message("unknownFormat "  speakInfo->directive->getMessageId()  " format "  format);
+        const std::string message("unknownFormat " + speakInfo->directive->getMessageId() + " format " + format);
         ACSDK_ERROR(LX("executePreHandleFailed")
                         .d("reason", "unknownFormat")
                         .d("messageId", speakInfo->directive->getMessageId())
@@ -481,7 +481,7 @@ void SpeechSynthesizer::executePreHandleAfterValidation(std::shared_ptr<SpeakDir
             speakInfo, avsCommon::avs::ExceptionErrorType::UNEXPECTED_INFORMATION_RECEIVED, message);
         return;
     }
-    std::string contentId = urlValue.substr(contentIdPosition  CID_PREFIX.length());
+    std::string contentId = urlValue.substr(contentIdPosition + CID_PREFIX.length());
     speakInfo->attachmentReader = speakInfo->directive->getAttachmentReader(contentId, sds::ReaderPolicy::NONBLOCKING);
     if (!speakInfo->attachmentReader) {
         const std::string message("getAttachmentReaderFailed");
@@ -500,7 +500,7 @@ void SpeechSynthesizer::executePreHandleAfterValidation(std::shared_ptr<SpeakDir
 void SpeechSynthesizer::executeHandleAfterValidation(std::shared_ptr<SpeakDirectiveInfo> speakInfo) {
     m_currentInfo = speakInfo;
     if (!m_focusManager->acquireChannel(CHANNEL_NAME, shared_from_this(), NAMESPACE)) {
-        static const std::string message = std::string("Could not acquire ")  CHANNEL_NAME  " for "  NAMESPACE;
+        static const std::string message = std::string("Could not acquire ") + CHANNEL_NAME + " for " + NAMESPACE;
         ACSDK_ERROR(LX("executeHandleFailed")
                         .d("reason", "CouldNotAcquireChannel")
                         .d("messageId", m_currentInfo->directive->getMessageId()));
@@ -545,7 +545,7 @@ void SpeechSynthesizer::executeCancel(std::shared_ptr<SpeakDirectiveInfo> speakI
         removeSpeakDirectiveInfo(speakInfo->directive->getMessageId());
         {
             std::lock_guard<std::mutex> lock(m_speakInfoQueueMutex);
-            for (auto it = m_speakInfoQueue.begin(); it != m_speakInfoQueue.end(); it) {
+            for (auto it = m_speakInfoQueue.begin(); it != m_speakInfoQueue.end(); it++) {
                 if (speakInfo->directive->getMessageId() == it->get()->directive->getMessageId()) {
                     it = m_speakInfoQueue.erase(it);
                     break;
@@ -917,7 +917,7 @@ void SpeechSynthesizer::sendExceptionEncounteredAndReportMissingProperty(
     sendExceptionEncounteredAndReportFailed(
         speakInfo,
         avsCommon::avs::ExceptionErrorType::UNEXPECTED_INFORMATION_RECEIVED,
-        std::string("missing property: ")  key);
+        std::string("missing property: ") + key);
 }
 
 void SpeechSynthesizer::releaseForegroundFocus() {
@@ -934,15 +934,15 @@ std::shared_ptr<SpeechSynthesizer::SpeakDirectiveInfo> SpeechSynthesizer::valida
     std::shared_ptr<DirectiveInfo> info,
     bool checkResult) {
     if (!info) {
-        ACSDK_ERROR(LX(caller  "Failed").d("reason", "nullptrInfo"));
+        ACSDK_ERROR(LX(caller + "Failed").d("reason", "nullptrInfo"));
         return nullptr;
     }
     if (!info->directive) {
-        ACSDK_ERROR(LX(caller  "Failed").d("reason", "nullptrDirective"));
+        ACSDK_ERROR(LX(caller + "Failed").d("reason", "nullptrDirective"));
         return nullptr;
     }
     if (checkResult && !info->result) {
-        ACSDK_ERROR(LX(caller  "Failed").d("reason", "nullptrResult"));
+        ACSDK_ERROR(LX(caller + "Failed").d("reason", "nullptrResult"));
         return nullptr;
     }
 

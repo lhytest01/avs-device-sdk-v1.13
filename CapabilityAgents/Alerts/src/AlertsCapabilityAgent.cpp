@@ -534,7 +534,7 @@ bool AlertsCapabilityAgent::handleDeleteAlerts(
     }
 
     auto tokenArray = tokensPayload->value.GetArray();
-    for (rapidjson::SizeType i = 0; i < tokenArray.Size(); i) {
+    for (rapidjson::SizeType i = 0; i < tokenArray.Size(); i++) {
         std::string token;
         if (!convertToValue(tokenArray[i], &token)) {
             ACSDK_WARN(LX("handleDeleteAlertsFailed").d("reason", "invalid token in payload"));
@@ -586,7 +586,7 @@ bool AlertsCapabilityAgent::handleAdjustVolume(
         ACSDK_ERROR(LX("handleAdjustVolumeFailed").m("Could not retrieve speaker volume."));
         return false;
     }
-    int64_t volume = adjustValue  speakerSettings.volume;
+    int64_t volume = adjustValue + speakerSettings.volume;
 
     setNextAlertVolume(volume);
 
